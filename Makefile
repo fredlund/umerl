@@ -2,8 +2,8 @@
 #EXAMPLES = $(wildcard examples/*.erl)
 
 vpath %.erl src examples
-BEAMS = $(patsubst %.erl,ebin/%.beam,$(wildcard src/*.erl))
-BEAMS += $(patsubst %.erl,ebin/%.beam,$(wildcard examples/*.erl))
+BEAMS = $(patsubst src/%.erl,ebin/%.beam,$(wildcard src/*.erl))
+BEAMS += $(patsubst examples/%.erl,ebin/%.beam,$(wildcard examples/*.erl))
 
 HTMLS = $(patsubst %.erl,doc/%.html,$(SOURCES))
 DOCDIR=doc

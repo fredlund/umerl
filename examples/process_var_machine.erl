@@ -44,7 +44,7 @@ state(single) ->
 		   {true,
 		    fun (_State) ->
 			uml:signal(From,ok),
-			uml:write(Process,acquired,false)
+			uml:assign(Process,acquired,false)
 		    end};
 		 _ -> false
 	       end;
