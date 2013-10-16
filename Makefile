@@ -1,16 +1,23 @@
-SOURCES = $(notdir $(wildcard src/*.erl))
-BEAMS = $(patsubst %.erl,ebin/%.beam,$(SOURCES))
+#SOURCES = $(notdir $(wildcard src/*.erl))
+#EXAMPLES = $(wildcard examples/*.erl)
+
+vpath %.erl src examples
+BEAMS = $(patsubst %.erl,ebin/%.beam,$(wildcard src/*.erl))
+BEAMS += $(patsubst %.erl,ebin/%.beam,$(wildcard examples/*.erl))
+
 HTMLS = $(patsubst %.erl,doc/%.html,$(SOURCES))
 DOCDIR=doc
 #HIPE=
-%HIPE=+native
+#HIPE=+native
 
-all: ebin $(BEAMS)
+all: ebin main
+
+main: ${BEAMS}
 
 ebin: 
 	mkdir -p ebin
 
-ebin/%.beam: src/%.erl src/records.hrl
+ebin/%.beam: %.erl src/records.hrl
 	erlc +debug_info $(HIPE) -o ebin $<
 
 clean:

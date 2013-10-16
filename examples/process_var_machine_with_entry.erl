@@ -2,7 +2,7 @@
 
 -module(process_var_machine_with_entry).
 
--include("records.hrl").
+-include("../src/records.hrl").
 
 -compile(export_all).
 
