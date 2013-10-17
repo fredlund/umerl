@@ -57,47 +57,29 @@ loop(State) ->
 	Msg={state,NewUMLStateName,NewDataState} ->
 	  ?LOG("~p received ~p",[self(),Msg]),
 	  UMLState = (State#machine_int.module):state(NewUMLStateName),
-	  NDS1 =
-	    if
-	      UMLState#uml_state.entry=/=void ->
-		?LOG("~p: running entry action~n",[self()]),
-		(UMLState#uml_state.entry)(Process,NewDataState);
-	      true ->
-		NewDataState
-	    end,
-	  NDS2 =
+	  NDS =
 	    if
 	      UMLState#uml_state.do=/=void ->
 		(State#machine_int.process)!
 		  {do,
 		   {self(),
 		    State#machine_int.uml_state_name,
-		    NDS1}},
+		    NewDataState}},
 		receive
 		  ok ->
 		    ?LOG("~p received ok~n",[self()]),
 		    ?LOG("~p: running do action~n",[self()]),
-		    (UMLState#uml_state.do)(Process,NDS1);
+		    (UMLState#uml_state.do)(Process,NewDataState);
 		  not_ok ->
 		    ?LOG("~p received not_ok~n",[self()]),
-		    NDS1
+		    NewDataState
 		end;
-	      true -> NDS1
-	    end,
-	  %% Maybe we should wait until running the exit loop until
-	  %% we are really leaving -- yes this is wrong.
-	  NDS3 =
-	    if
-	      UMLState#uml_state.exit=/=void ->
-		?LOG("~p: running exit action~n",[self()]),
-		(UMLState#uml_state.exit)(Process,NDS2);
-	      true ->
-		NDS2
+	      true -> NewDataState
 	    end,
 	  loop
 	    (State#machine_int
 	     {uml_state_name=NewUMLStateName,
-	      data_state=NDS3});
+	      data_state=NDS});
 	Other ->
 	  ?LOG("~p received ~p~n",[self(),Other]),
 	  loop(State)

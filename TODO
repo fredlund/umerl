@@ -1,2 +1,15 @@
 - Handle defer
+- Nested states?
+- Possibly we can allow do:s to be interrupted during various operations.
+(read,write,send). Do we want to do this?
+
+========================
+
 - Improve entry/do/exit
+- Internal transitions
+
+- We permit internal transitions (we have to add a keyword) and entry/exits
+in the pseudo-Erlang format, but transform them internally to normal external
+transitions (without entry/exit). This permits us to handle both
+internal and external transitions well.
+

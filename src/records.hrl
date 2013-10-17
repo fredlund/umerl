@@ -9,6 +9,7 @@
 -record(uml_state,
 	{name,
 	 transitions,
+	 internal_transitions,
 	 type=void,
 	 defers=[],  %% A list or all
 	 entry=void,
