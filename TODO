@@ -1,15 +1,52 @@
-- Handle defer
 - Nested states?
+
+Do actions
+==========
 - Possibly we can allow do:s to be interrupted during various operations.
 (read,write,send). Do we want to do this?
 
+Defer
+=====
+
+- Handle defer
+
+- defer: a guard for deferral?
+  or simply matching the name of the message {name,...} or name.
+
+our semantics for defer is different from the standard one,
+in that we do not re-evaluate deferedness when we enter a new state
+for all messages.
+
+- If we defer in one state machine and not in another, then
+we should not defer anywhere??? (or rather, signals are not
+transmitted to all machines?)
+
+Machines
+========
+
+- Orthogonal regions can coordinate by sending events (signals)
+to each other
+
+
+Entry and exit handling
 ========================
 
-- Improve entry/do/exit
+- Improve entry/exit
 - Internal transitions
 
 - We permit internal transitions (we have to add a keyword) and entry/exits
 in the pseudo-Erlang format, but transform them internally to normal external
 transitions (without entry/exit). This permits us to handle both
 internal and external transitions well.
+
+[maybe write a parse transform]
+
+- Note the absurdness of having an exit guard invalidate the transition
+guard leaving the transition.
+
+How to translate
+=================
+
+- choice
+- entry and exit
 
