@@ -2,6 +2,7 @@
 
 -module(meaner_machine).
 
+-include("../src/umlerl.hrl").
 -include("../src/records.hrl").
 
 -compile(export_all).
@@ -19,7 +20,7 @@ state(idle) ->
 	{type='receive',
 	 next_state=acquired,
 	 guard=
-	   fun ({acquire,From},_Process,_State) -> 
+ 	   fun ({acquire,From},_Process,_State) -> 
 	       {true,
 		fun (_State) ->
 		    From

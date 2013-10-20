@@ -18,7 +18,7 @@ ebin:
 	mkdir -p ebin
 
 ebin/%.beam: %.erl src/records.hrl
-	erlc +debug_info $(HIPE) -o ebin $<
+	erlc +debug_info -pa ebin $(HIPE) -o ebin $<
 
 clean:
 	rm -rf ebin/* 
