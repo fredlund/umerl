@@ -1,5 +1,13 @@
 -module(process).
 
+%% Remains:
+%% - parse_transform or something similar to remove entry and exit transitions.
+%% - handle do.
+%% - handle defer.
+%% - do model checking.
+%% - grant write permission on writes during action (do) evaluation.
+%% 
+
 -compile(export_all).
 
 -include("records.hrl").
@@ -12,6 +20,7 @@
 	{
 	  module,
 	  pid,
+	  state,
 	  mailbox,
 	  wants_permission=void,
 	  permissions
@@ -121,8 +130,16 @@ loop(PermissionsState) ->
 	  case pickTransition(EnabledReads++EnabledReceives) of
 	    {ok,{GuardAction,ChosenTransition,NewMachine}} ->
 	      ?LOG("transition choosen is~n~p~n",[ChosenTransition]),
-	      MachineData = run_guard_action(GuardAction,DataState),
-	      MachinePid!{state,ChosenTransition#transition.next_state,MachineData},
+	      {MachineData,NewMailbox} =
+		run_guard_action
+		  (GuardAction,
+		   DataState,
+		   StateName,
+		   ChosenTransition#transition.next_state,
+		   Machine#machine.mailbox,
+		   Machine#machine.module),
+	      MachinePid!
+		{state,ChosenTransition#transition.next_state,MachineData},
 	      loop
 		(State#process
 		 {machines=
@@ -130,7 +147,8 @@ loop(PermissionsState) ->
 		      (MachinePid,1,State#process.machines,
 		       {MachinePid,
 			NewMachine#machine
-			{permissions=[read,'receive']}})});
+			{permissions=[read,'receive'],
+			 mailbox=NewMailbox}})});
 
 	    _ ->
 	      MachinePid!none,
@@ -257,9 +275,21 @@ try_receive_msg(Msg,Transitions,DataState,State) ->
 	 end
      end, [], Transitions).
 
-run_guard_action(GuardAction,DataState) ->
+run_guard_action(GuardAction,DataState,FromState,ToState,Mailbox,Module) ->
   ?LOG("running guard action~n",[]),
-  GuardAction(DataState).
+  NewMailbox =
+    if
+      FromState =/=  ToState ->
+	NewState = Module:state(ToState),
+	Defer = NewState#uml_state.defer,
+	if
+	  Defer =/= all -> lists:filter(Defer,Mailbox);
+	  true -> Mailbox
+	end;
+      true -> Mailbox
+  end,
+  NewDataState = GuardAction(DataState),
+  {NewDataState,NewMailbox}.
 
 pickTransition(Transitions=[_|_]) ->
   Length = length(Transitions),

@@ -1,23 +1,33 @@
-%% Entry is always executed, and cannot be preempted.
-%% After Entry has concluded, we do a check to see if
-%% a message is receivable, if so we preempt the do,
-%% otherwise do is executed (without checking again, maybe, or
-%% continuously checking rather).
-%% Exit is evaluated upon termination.
-%% These activities are not atomic with respect to other machines.
-
 -record(uml_state,
-	{name,
-	 transitions,
-	 internal_transitions,
-	 type=void,
-	 defers=[],  %% A list or all
-	 entry=void,
-	 do=void,
-	 exit=void}).
+	{
+	  %% State name
+	  name,
+	  %% "Normal" transitions that execute try and exit actions.
+	  transitions,
+	  %% Internal transitions (i.e., do not 
+	  %% execute entry and exit actions.
+	  internal_transitions,
+	  %% Type of state, an "upper bound" for the transition types
+	  type=void,
+	  %% May be all, or a function
+	  %% (over messages, object state and machine state).
+	  %% Default is all.
+	  defer=all, 
+	  %% Entry action
+	  entry=void,
+	  %% Do action
+	  do=void,
+	  %% Exit action
+	  exit=void
+	}).
 
 -record(transition,
-	{type=void,
-	 guard,
-	 next_state}).
+	{
+	  %% Type: 'receive', 'read' or 'receive_read'.
+	  type=void,
+	  %% Guard function (which returns the {true, action function} or false)
+	  guard,
+	  %% Target state
+	  next_state
+	}).
 	 
