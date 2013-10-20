@@ -111,7 +111,27 @@ LARS-\r{A}KE FREDLUND
 \affil{Technical University of Madrid, Spain}}
 
 \begin{abstract}
-\ldots
+There is a growing interest in the use of UML for the specification and
+analysis of the requirements of critical systems.
+%
+A key factor for the successful adoption of UML and model driven
+methodologies is the possibility to validate designs in early stages
+so as to correct possible mistakes or even reveal inconsistent or
+incomplete requirements in their specifications.
+%
+One approach to achieve this goal is to translate subsets of UML into
+programs that can be processed by automatic verification tools
+such as model checkers.  However, the subsets of UML considered are
+typically very limited and no formal definition of the translation is provided.
+%
+In this paper we define a translation of UML models containing
+class, object and state diagrams into Erlang programs that can be verified with
+model checking.
+%
+The translation is applied to an industrial case study on the
+modelling and verification of the requirements of a high-speed railway
+signalling system. We show how errors in the model and ambiguities in
+the requirements are automatically detected.
 \end{abstract}
 
 %TODO
