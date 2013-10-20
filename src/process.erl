@@ -189,7 +189,7 @@ loop(PermissionsState) ->
 		(State#process
 		 {machines=
 		    lists:keyreplace
-		      (MachinePid,1,NewMachines,
+		      (MachinePid,1,State#process.machines,
 		       {MachinePid,Machine#machine
 			{permissions=[]}})})
 	  end;
