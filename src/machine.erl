@@ -7,7 +7,7 @@
 -record(machine_int,
 	{module,uml_state_name,data_state,process,memory,doer=void}).
 
-%%-define(debug,true).
+-define(debug,true).
 
 -ifdef(debug).
 -define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
@@ -30,6 +30,7 @@ start(Module,InitArg,Process,Memory) ->
       data_state=DataState}).
 
 loop(State) ->
+  ?LOG("~p: loop(~p)~n",[self(),State]),
   UMLPreState =
     (State#machine_int.module):state(State#machine_int.uml_state_name),
   if
