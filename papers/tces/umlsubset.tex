@@ -1,0 +1,44 @@
+\section{UML Subset}
+\label{sec:umlsubset}
+
+\todo{Develop these bullet points}
+\begin{itemize}
+\item UML es ambiguo, e impreciso.
+\item Mostrar ejemplos de diagramas inconsistentes, tanto estáticos
+  como dinámicos.
+\item A nivel de ejemplos de máquina de estado podemos incluso hablar
+  del scope de símbolos accesibles para justificar nuestra relación
+  entre máquinas y clases.
+\item Poner ejemplos de máquinas que no se sabe bien qué significan.
+\item Seleccionar y justificar el subset (está en correos electrónicos).
+\item Explicar la semántica a través de los pequeños ejemplos
+  mostrados anteriormente.
+\end{itemize}
+
+\todo{Texto traído del paper de UML a Uppaal}
+The UML models considered in the formalism are divided into the static
+model (to represent class diagrams and object diagrams), and the
+dynamic model (to represent state diagrams). Describing and
+integrating the intended meaning of class diagrams and object diagrams
+is not straightforward but it is not extremely difficult. Although we
+do not contemplate all the constructions of both diagrams, most of
+those that we leave out are considered \emph{syntactic sugar} (can be
+expressed in function of other constructions). Omitting the rest of
+constructions is justified because they were unnecessary in our domain
+and/or because of our search of an economical mathematical
+representation.
+
+Our restrictions to obtain a subset of the language of state diagrams
+are clearly harder than the restrictions on the static model. In this
+case, our justification has to do, mainly, with the simplicity of the
+semantics. Just to mention one example, the allowed state diagrams are
+\emph{behavioral state machines} to specify the behaviour of the
+instances of a given class that are based on the Harel's visual
+formalism of statecharts (\cite{harel}).
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "british"
+%%% End: 
