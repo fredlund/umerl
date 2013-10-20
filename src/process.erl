@@ -9,7 +9,6 @@
 %% and restart them, and maybe similarly internal transitions should not.
 
 %% Remains:
-%% - handle do.
 %% - grant write permission on writes during guard action evaluation.
 %% - cleanup.
 %% - provide types.
@@ -116,7 +115,7 @@ loop(PermissionsState) ->
 		       {MachinePid,Machine#machine{wants_permission=Type}})})
 	  end;
 
-	{transitions,{MachinePid,StateName,DataState}} ->
+	{transitions,{MachinePid,StateName,DataState,Doer}} ->
 	  {value,{_,Machine}} =
 	    lists:keysearch(MachinePid,1,State#process.machines),
 	  UMLState =
@@ -141,6 +140,7 @@ loop(PermissionsState) ->
 	  case pickTransition(EnabledReads++EnabledReceives) of
 	    {ok,{GuardAction,ChosenTransition,NewMachine}} ->
 	      ?LOG("transition choosen is~n~p~n",[ChosenTransition]),
+	      put(var_write,false),
 	      {MachineData,NewMailbox} =
 		run_guard_action
 		  (GuardAction,
@@ -149,13 +149,35 @@ loop(PermissionsState) ->
 		   ChosenTransition#transition.next_state,
 		   Machine#machine.mailbox,
 		   Machine#machine.module),
+	      NewMachines =
+		case get(var_write) of
+		  true ->
+		    lists:map
+		      (fun (Machine) ->
+			   case not(lists:member(read,Machine#machine.permissions)) of
+			     true ->
+			       Machine#machine{permissions=[read|Machine#machine.permissions]};
+			     false ->
+			       Machine
+			   end
+		       end, State#process.machines);
+		  false ->
+		    State#process.machines
+		end,
+	      if
+		not(ChosenTransition#transition.is_internal),
+		Doer=/=void ->
+		  exit(Doer,kill);
+		true ->
+		  ok
+	      end,
 	      MachinePid!
 		{state,ChosenTransition#transition.next_state,MachineData},
 	      loop
 		(State#process
 		 {machines=
 		    lists:keyreplace
-		      (MachinePid,1,State#process.machines,
+		      (MachinePid,1,NewMachines,
 		       {MachinePid,
 			NewMachine#machine
 			{permissions=[read,'receive'],
@@ -167,7 +189,7 @@ loop(PermissionsState) ->
 		(State#process
 		 {machines=
 		    lists:keyreplace
-		      (MachinePid,1,State#process.machines,
+		      (MachinePid,1,NewMachines,
 		       {MachinePid,Machine#machine
 			{permissions=[]}})})
 	  end;
@@ -186,7 +208,7 @@ loop(PermissionsState) ->
 			Machine#machine
 			{permissions=add_permission(read,Machine#machine.permissions)}}
 		   end, State#process.machines)});
-	  
+
 	_ ->
 	  ?LOG
 	    ("*** ~p: warning: received strange message~n~p~n",

@@ -7,9 +7,8 @@ signal(To,Msg) ->
   To!Msg.
 
 assign({in_process,Table},Var,Value) ->
-  %% We have to somehow inform the process that a write has taken place too
-  %% We could use property lists for example.
   ets:insert(Table,{Var,Value}),
+  put(var_write,true),
   Value;
 assign({outside_process,MachinePid,Process,Table},Var,Value) ->
   Process!{write,MachinePid,Var,Value}.

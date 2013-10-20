@@ -4,7 +4,8 @@
 
 -include("records.hrl").
 
--record(machine_int,{module,uml_state_name,data_state,process,memory}).
+-record(machine_int,
+	{module,uml_state_name,data_state,process,memory,doer=void}).
 
 %%-define(debug,true).
 
@@ -52,28 +53,24 @@ loop(State) ->
 	{transitions,
 	 {self(),
 	  State#machine_int.uml_state_name,
-	  State#machine_int.data_state}},
+	  State#machine_int.data_state,
+	  State#machine_int.doer}},
       receive
 	Msg={state,NewUMLStateName,NewDataState} ->
 	  ?LOG("~p received ~p",[self(),Msg]),
 	  UMLState = (State#machine_int.module):state(NewUMLStateName),
 	  if
 	    UMLState#uml_state.do=/=void ->
-	      try (UMLState#uml_state.do)(Process,NewDataState) of
-		  NewDataState1 ->
-		  (State#machine_int.process)!
-		    {finished,
-		     {self(),
-		      NewDataState}},
-		  loop
-		    (State#machine_int1
-		     {uml_state_name=NewUMLStateName,
-		      data_state=NewDataState1})
-	      catch interrupted ->
-		  loop(State#machine_int
-		       {uml_state_name=NewUMLStateName,
-			data_state=NewDataState})
-	      end;
+	      DoProcess =
+		spawn
+		  (fun () ->
+		       (UMLState#uml_state.do)(Process,NewDataState)
+		   end),
+	      loop
+		(State#machine_int
+		 {doer=DoProcess,
+		  uml_state_name=NewUMLStateName,
+		  data_state=NewDataState});
 	    true -> 
 	      loop(State#machine_int
 		   {uml_state_name=NewUMLStateName,

@@ -2,11 +2,8 @@
 	{
 	  %% State name
 	  name,
-	  %% "Normal" transitions that execute try and exit actions.
+	  %% External and internal transitions
 	  transitions,
-	  %% Internal transitions (i.e., do not 
-	  %% execute entry and exit actions.
-	  internal_transitions,
 	  %% Type of state, an "upper bound" for the transition types
 	  type=void,
 	  %% May be all, or a function
@@ -25,6 +22,9 @@
 	{
 	  %% Type: 'receive', 'read' or 'receive_read'.
 	  type=void,
+	  %% Internal transition (i.e., will not execute enter and exit actions)
+	  %% or external
+	  is_internal=false,
 	  %% Guard function (which returns the {true, action function} or false)
 	  guard,
 	  %% Target state
