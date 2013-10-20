@@ -57,29 +57,28 @@ loop(State) ->
 	Msg={state,NewUMLStateName,NewDataState} ->
 	  ?LOG("~p received ~p",[self(),Msg]),
 	  UMLState = (State#machine_int.module):state(NewUMLStateName),
-	  NDS =
-	    if
-	      UMLState#uml_state.do=/=void ->
-		(State#machine_int.process)!
-		  {do,
-		   {self(),
-		    State#machine_int.uml_state_name,
-		    NewDataState}},
-		receive
-		  ok ->
-		    ?LOG("~p received ok~n",[self()]),
-		    ?LOG("~p: running do action~n",[self()]),
-		    (UMLState#uml_state.do)(Process,NewDataState);
-		  not_ok ->
-		    ?LOG("~p received not_ok~n",[self()]),
-		    NewDataState
-		end;
-	      true -> NewDataState
-	    end,
-	  loop
-	    (State#machine_int
-	     {uml_state_name=NewUMLStateName,
-	      data_state=NDS});
+	  if
+	    UMLState#uml_state.do=/=void ->
+	      try (UMLState#uml_state.do)(Process,NewDataState) of
+		  NewDataState1 ->
+		  (State#machine_int.process)!
+		    {finished,
+		     {self(),
+		      NewDataState}},
+		  loop
+		    (State#machine_int1
+		     {uml_state_name=NewUMLStateName,
+		      data_state=NewDataState1})
+	      catch interrupted ->
+		  loop(State#machine_int
+		       {uml_state_name=NewUMLStateName,
+			data_state=NewDataState})
+	      end;
+	    true -> 
+	      loop(State#machine_int
+		   {uml_state_name=NewUMLStateName,
+		    data_state=NewDataState})
+	  end;
 	Other ->
 	  ?LOG("~p received ~p~n",[self(),Other]),
 	  loop(State)

@@ -1,11 +1,20 @@
 -module(process).
 
+%% Doubts:
+%% - is there any difference in the handling of do actions between
+%% external and internal transitions?
+%% That is, do internal transitions abort do actions, do self-transitions 
+%% abort do actions?
+%% To be consistent self-transitions should probably abort do actions,
+%% and restart them, and maybe similarly internal transitions should not.
+
 %% Remains:
-%% - parse_transform or something similar to remove entry and exit transitions.
 %% - handle do.
-%% - handle defer.
+%% - grant write permission on writes during guard action evaluation.
+%% - cleanup.
+%% - provide types.
+%% - parse_transform or something similar to remove entry and exit transitions.
 %% - do model checking.
-%% - grant write permission on writes during action (do) evaluation.
 %% 
 
 -compile(export_all).
@@ -13,8 +22,10 @@
 -include("records.hrl").
 
 -record(process,
-	{machines=[],
-	 memory}).
+	{
+	  machines=[],
+	  memory
+	}).
 
 -record(machine,
 	{
@@ -160,10 +171,6 @@ loop(PermissionsState) ->
 		       {MachinePid,Machine#machine
 			{permissions=[]}})})
 	  end;
-
-	{do,{_MachinePid,_StateName,_DataState}} ->
-	  ?LOG("do not handled yet~n",[]),
-	  loop(State);
 
 	{write,MachinePid,Var,Value} ->
 	  ?LOG
