@@ -35,7 +35,7 @@
 	  permissions
 	}).
 
-%%-define(debug,true).
+-define(debug,true).
 
 -ifdef(debug).
 -define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
@@ -146,22 +146,17 @@ loop(PermissionsState) ->
 		   DataState,
 		   StateName,
 		   ChosenTransition#transition.next_state,
-		   Machine#machine.mailbox,
+		   NewMachine#machine.mailbox,
 		   Machine#machine.module),
-	      NewMachines =
+	      NewerMachine =
 		case get(var_write) of
 		  true ->
-		    lists:map
-		      (fun (Machine) ->
-			   case not(lists:member(read,Machine#machine.permissions)) of
-			     true ->
-			       Machine#machine{permissions=[read|Machine#machine.permissions]};
-			     false ->
-			       Machine
-			   end
-		       end, State#process.machines);
-		  false ->
-		    State#process.machines
+		    case not(lists:member(read,NewMachine#machine.permissions)) of
+		      true ->
+			NewMachine#machine{permissions=[read|NewMachine#machine.permissions]};
+		      false -> NewMachine
+		    end;
+		  false -> NewMachine
 		end,
 	      if
 		not(ChosenTransition#transition.is_internal),
@@ -176,9 +171,9 @@ loop(PermissionsState) ->
 		(State#process
 		 {machines=
 		    lists:keyreplace
-		      (MachinePid,1,NewMachines,
+		      (MachinePid,1,State#process.machines,
 		       {MachinePid,
-			NewMachine#machine
+			NewerMachine#machine
 			{permissions=[read,'receive'],
 			 mailbox=NewMailbox}})});
 
