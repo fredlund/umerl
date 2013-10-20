@@ -9,7 +9,6 @@
 %% and restart them, and maybe similarly internal transitions should not.
 
 %% Remains:
-%% - grant write permission on writes during guard action evaluation.
 %% - cleanup.
 %% - provide types.
 %% - parse_transform or something similar to remove entry and exit transitions.
