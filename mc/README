@@ -1,0 +1,10 @@
+For doing model checking with McErlang.
+Assumes that McErlang is already installed.
+The environment variable MCERLANG should point to the McErlang installation
+directory.
+
+Try:
+	$ make
+	> $(MCERLANG)/scripts/mcerl -pa ebin
+	erl> mc:mc().
+	...
