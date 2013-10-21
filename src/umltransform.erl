@@ -114,6 +114,22 @@ entexit_states(AST) ->
     (fun ({function,_,state,_,Clauses},Acc) ->
 	 lists:map
 	   (fun ({clause,_,[{atom,_,Name}],_,[{record,_,uml_state,Items}]}) ->
+		case item_in_record(name,Items,void) of
+		  {atom,_,Name2} when Name=/=Name2 ->
+		    io:format
+		      ("*** Error: state clause defines a state named ~p"++
+			 " but the record defines a state named ~p~n",
+		       [Name,Name2]),
+		    throw(bad);
+		  {atom,_,Name} -> 
+		    ok;
+		  _ ->
+		    io:format
+		      ("*** Error: state clause defines a state named ~p"++
+			 " but the record does not provide a name~n",
+		       [Name]),
+		    throw(bad)
+		end,
 		{Name,
 		 {item_in_record(entry,Items,void),
 		  item_in_record(exit,Items,void)}};
