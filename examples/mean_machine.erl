@@ -3,6 +3,7 @@
 -module(mean_machine).
 
 -include("../src/records.hrl").
+-include("../src/umerl.hrl").
 
 -compile(export_all).
 

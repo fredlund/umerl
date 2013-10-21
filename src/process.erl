@@ -11,7 +11,6 @@
 %% Remains:
 %% - cleanup.
 %% - provide types.
-%% - parse_transform or something similar to remove entry and exit transitions.
 %% - do model checking.
 %% 
 
@@ -19,20 +18,22 @@
 
 -include("records.hrl").
 
--record(process,
-	{
-	  machines=[],
-	  memory
-	}).
+-type permission() :: 'read' | 'receive' | 'receive_read'.
 
 -record(machine,
 	{
-	  module,
-	  pid,
-	  state,
-	  mailbox,
-	  wants_permission=void,
-	  permissions
+	  module :: atom(),
+	  pid :: pid(),
+	  state :: atom(),
+	  mailbox :: [any()],
+	  wants_permission=void :: 'void' | permission(),
+	  permissions :: [permission()]
+	}).
+
+-record(process,
+	{
+	  machines=[] :: #machine{},
+	  memory
 	}).
 
 -define(debug,true).
@@ -53,17 +54,19 @@ start(MachineSpecs,InitVars) ->
   InitVars({in_process,Memory}),
   Self = self(),
   Machines =
-    lists:map
-      (fun ({Module,Init}) ->
+    lists:foldl
+      (fun ({Module,Init},Acc) ->
 	   MachinePid =
 	     spawn_link(fun () -> machine:start(Module,Init,Self,Memory) end),
-	   {MachinePid,
-	    #machine
-	    {pid=MachinePid,
-	     module=Module,
-	     mailbox=[],
-	     permissions=[read]}}
+	   add_machine
+	     (#machine
+	      {pid=MachinePid,
+	       module=Module,
+	       mailbox=[],
+	       permissions=[read]},
+	      Acc)
        end,
+       [],
        MachineSpecs),
   loop
     (#process
@@ -92,31 +95,24 @@ loop(PermissionsState) ->
 		   end, State#process.machines)});
 
 	{ask_transitions,{MachinePid,Type}} ->
-	  {value,{_,Machine}} =
-	    lists:keysearch(MachinePid,1,State#process.machines),
+	  Machine = get_machine(MachinePid,State),
 	  case has_permission(Machine#machine.permissions,Type) of
 	    true ->
 	      MachinePid!ok,
 	      loop
-		(State#process
-		 {machines=
-		    lists:keyreplace
-		      (MachinePid,1,State#process.machines,
-		       {MachinePid,Machine#machine
-			{permissions=[],
-			 wants_permission=void}})});
+		(replace_machine
+		   (Machine#machine
+		    {permissions=[],
+		     wants_permission=void},
+		    State));
 	    false ->
 	      loop
-		(State#process
-		 {machines=
-		    lists:keyreplace
-		      (MachinePid,1,State#process.machines,
-		       {MachinePid,Machine#machine{wants_permission=Type}})})
+		(replace_machine
+		 (Machine#machine{wants_permission=Type},State))
 	  end;
 
 	{transitions,{MachinePid,StateName,DataState,Doer}} ->
-	  {value,{_,Machine}} =
-	    lists:keysearch(MachinePid,1,State#process.machines),
+	  Machine = get_machine(MachinePid,State),
 	  UMLState =
 	    (Machine#machine.module):state(StateName),
 	  Transitions =
@@ -168,24 +164,17 @@ loop(PermissionsState) ->
 	      MachinePid!
 		{state,ChosenTransition#transition.next_state,MachineData},
 	      loop
-		(State#process
-		 {machines=
-		    lists:keyreplace
-		      (MachinePid,1,State#process.machines,
-		       {MachinePid,
-			NewerMachine#machine
-			{permissions=[read,'receive'],
-			 mailbox=NewMailbox}})});
+		(replace_machine
+		   (NewerMachine#machine
+		    {permissions=[read,'receive'],
+		     mailbox=NewMailbox},
+		    State));
 
 	    _ ->
 	      MachinePid!none,
 	      loop
-		(State#process
-		 {machines=
-		    lists:keyreplace
-		      (MachinePid,1,State#process.machines,
-		       {MachinePid,Machine#machine
-			{permissions=[]}})})
+		(replace_machine
+		 (Machine#machine{permissions=[]},State))
 	  end;
 
 	{write,MachinePid,Var,Value} ->
@@ -320,6 +309,20 @@ pickTransition(Transitions=[_|_]) ->
 pickTransition(_) ->
   no.
 
+replace_machine(NewMachine,State) ->
+  MachinePid = 
+    NewMachine#machine.pid,
+  State#process
+    {machines=
+       lists:keyreplace
+	 (MachinePid,1,State#process.machines,{MachinePid,NewMachine})}.
+
+get_machine(MachinePid,State) ->
+  {value,{_,Machine}} = lists:keysearch(MachinePid,1,State#process.machines),
+  Machine.
+
+add_machine(Machine,Machines) ->  
+  [{Machine#machine.pid,Machine}|Machines].
 
 
 

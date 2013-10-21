@@ -3,6 +3,7 @@
 -module(process_var_machine_with_entry).
 
 -include("../src/records.hrl").
+-include("../src/umerl.hrl").
 
 -compile(export_all).
 
