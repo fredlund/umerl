@@ -9,8 +9,7 @@
 %% and restart them, and maybe similarly internal transitions should not.
 
 %% Remains:
-%% - cleanup.
-%% - provide types.
+%% - do some testing
 %% - do model checking.
 %% 
 
@@ -34,14 +33,12 @@
 	  memory
 	}).
 
--define(debug,true).
+%%-define(debug,true).
 
 -ifdef(debug).
 -define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
--define(DEBUGVAL(),true).
 -else.
 -define(LOG(X,Y), ok).
--define(DEBUGVAL(),false).
 -endif.
 
 start(MachineSpecs) ->
@@ -55,7 +52,10 @@ start(MachineSpecs,InitVars) ->
     lists:foldl
       (fun ({Module,Init},Acc) ->
 	   MachinePid =
-	     spawn_link(fun () -> machine:start(Module,Init,Self,Memory) end),
+	     spawn_link
+	       (fun () ->
+		    machine:start(Module,Init,Self,Memory)
+		end),
 	   add_machine
 	     (#machine
 	      {pid=MachinePid,

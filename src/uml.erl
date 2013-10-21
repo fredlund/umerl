@@ -2,8 +2,16 @@
 
 -compile(export_all).
 
+%%-define(debug,true).
+
+-ifdef(debug).
+-define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
+-else.
+-define(LOG(X,Y), ok).
+-endif.
+
 signal(To,Msg) ->
-  io:format("signal ~p to ~p~n",[Msg,To]),
+  ?LOG("signal ~p to ~p~n",[Msg,To]),
   To!Msg.
 
 assign({in_process,Table},Var,Value) ->

@@ -1,19 +1,27 @@
 -module(test).
 
+-include_lib("eunit/include/eunit.hrl").
+
 -compile(export_all).
 
-test() ->
+t_test() ->
   MachineSpecs = [{mean_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
-  P = spawn_link(fun () -> process:start(MachineSpecs) end),
+  P =
+    spawn_link
+      (fun () ->
+	   process:start(MachineSpecs)
+       end),
   io:format("Started process ~p~n",[P]),
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok -> P!{message,release}
-  end.
+    ok ->
+      P!{message,release}
+  end,
+  timer:sleep(200).
 
-test2() ->
+t2_test() ->
   MachineSpecs = [{meaner_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
   P = spawn_link(fun () -> process:start(MachineSpecs) end),
@@ -21,10 +29,12 @@ test2() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok -> P!{message,release}
-  end.
+    ok ->
+      P!{message,release}
+  end,
+  timer:sleep(200).
 
-test3() ->
+t3_test() ->
   MachineSpecs = [{local_var_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
   P = spawn_link(fun () -> process:start(MachineSpecs) end),
@@ -32,10 +42,12 @@ test3() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok -> P!{message,release}
-  end.
+    ok ->
+      P!{message,release}
+  end,
+  timer:sleep(200).
 
-test4() ->
+t4_test() ->
   MachineSpecs = [{process_var_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
   P =
@@ -51,10 +63,12 @@ test4() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok -> P!{message,release}
-  end.
+    ok ->
+      P!{message,release}
+  end,
+  timer:sleep(200).
 
-test5() ->
+t5_test() ->
   MachineSpecs = [{process_var_machine_with_entry,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
   P =
@@ -71,8 +85,10 @@ test5() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok -> P!{message,release}
-  end.
+    ok ->
+      P!{message,release}
+  end,
+  timer:sleep(200).
 
 
 
