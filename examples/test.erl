@@ -16,7 +16,7 @@ t_test() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok ->
+    {message,ok} ->
       P!{message,release}
   end,
   timer:sleep(200).
@@ -29,7 +29,7 @@ t2_test() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok ->
+    {message,ok} ->
       P!{message,release}
   end,
   timer:sleep(200).
@@ -42,7 +42,7 @@ t3_test() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok ->
+    {message,ok} ->
       P!{message,release}
   end,
   timer:sleep(200).
@@ -63,7 +63,7 @@ t4_test() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok ->
+    {message,ok} ->
       P!{message,release}
   end,
   timer:sleep(200).
@@ -85,7 +85,7 @@ t5_test() ->
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
-    ok ->
+    {message,ok} ->
       P!{message,release}
   end,
   timer:sleep(200).
