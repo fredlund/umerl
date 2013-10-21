@@ -1,0 +1,74 @@
+% Cover letter template
+\documentclass{letter}
+
+\usepackage[utf8]{inputenc} % Spanish chars
+\usepackage{url}
+
+\usepackage{color}
+
+\usepackage{graphicx} % Inclusión de gráficos.
+
+% Sender data
+\newcommand{\UPM}{Universidad Politécnica de Madrid\\Babel Group, Dpto.
+de Lenguajes y\\Sistemas Inform\'{a}ticos e Ingenier\'{i}a de Software\\Campus
+de Montegancedo, Facultad de Informática \\ 28660 Boadilla del Monte (Madrid) -
+España (Spain)}
+\newcommand{\authorName}{Ricardo J. Rodríguez\\(corresponding author)}
+\newcommand{\keywordsList}{UML, Erlang, automatic code generation}
+
+% Addresseee data
+\newcommand{\whoAddressee}{Guest Editors}
+\newcommand{\journalName}{Special Issue on Application of Concurrency
+to System Design}
+\newcommand{\publisher}{ACM Trans. Embed. Comp. Sys.}
+
+% Manuscript title
+\newcommand{\manuscriptTitle}{TBD}
+
+% DO NOT MODIFY THIS...
+\newcommand{\addressee}{\whoAddressee\\\journalName\\\publisher}
+
+\usepackage{hyperref}
+% Metadatos
+\hypersetup{
+  baseurl={http://www.ricardojrodriguez.es},
+  pdftitle={Cover Letter: manuscript ``\manuscriptTitle''},%
+  pdfauthor={\authorName},%
+  pdfproducer={\LaTeX},%
+  pdfsubject={Cover Letter: manuscript ``\manuscriptTitle''},%
+  pdfkeywords={\keywordsList}%
+}
+
+\newcommand{\REVIEW}[1]{\textcolor{black}{#1}}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\usepackage[a4paper, top=3cm]{geometry}
+
+%\signature{\authorName}
+\address{\UPM}
+
+\begin{document}
+\begin{letter}{{\bf \addressee}}
+% Opening
+\opening{Dear \whoAddressee:}
+% Letter content
+Enclosed to this cover letter is an original research article, entitled
+``\manuscriptTitle''. Please consider it as a candidate for publication in
+``\journalName'' ({\publisher}). This paper is our original unpublished work. It
+has not been
+previously submitted elsewhere and it is not currently being reviewed by any
+other journal or conference.
+
+In this paper, we \TODO{\ldots}.
+
+
+Thank you for your time and consideration, we look forward to your reply.
+
+\closing{Yours faithfully,\\
+\fromsig{\includegraphics[width=0.5\columnwidth]{images/firma}} \\
+\fromname{\authorName}}
+%\ps{P.S. Here goes your ps.}
+\encl{paper in PDF file format.}
+
+\end{letter}
+\end{document}
