@@ -4,12 +4,22 @@
 
 -compile(export_all).
 
+%%-define(debug,true).
+
+-ifdef(debug).
+-define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
+-define(DEBUGVAL(),true).
+-else.
+-define(LOG(X,Y), ok).
+-define(DEBUGVAL(),false).
+-endif.
+
 parse_transform(AST, _Options) ->
   Map = entexit_states(AST),
-  io:format("~nstates:~n~p~n",[Map]),
-  io:format("~nold AST:~n~p~n",[AST]),
+  ?LOG("~nstates:~n~p~n",[Map]),
+  ?LOG("~nold AST:~n~p~n",[AST]),
   NewAST = change_transitions(AST,Map),
-  io:format("~nnew AST:~n~p~n",[NewAST]),
+  ?LOG("~nnew AST:~n~p~n",[NewAST]),
   NewAST.
 
 change_transitions(AST,Map) ->
@@ -64,7 +74,7 @@ rewrite_clause(IsExternal,Clause,FromState,ToState,Map) ->
       Other ->
 	Other
     end,
-  io:format("ProcessTerm is ~p~n",[ProcessTerm]),
+  ?LOG("ProcessTerm is ~p~n",[ProcessTerm]),
   NewCode =
     if
       IsExternal ->
@@ -131,7 +141,7 @@ other_records(Name,[First|Rest]) ->
 %%  
 
 compose_code(Pre,Code,OtherFun,ProcessTerm) ->
-  io:format("Code is~n~p~nOtherFun=~n~p~n",[Code,OtherFun]),
+  ?LOG("Code is~n~p~nOtherFun=~n~p~n",[Code,OtherFun]),
   [
    {'case',46,
     {block,46,Code},
