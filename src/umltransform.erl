@@ -1,16 +1,16 @@
 -module(umltransform).
 
--compile(export_all).
+-include("records.hrl").
 
-%% We should collect all states, and for each state record the entry
-%% and exit functions.
-%%
+-compile(export_all).
 
 parse_transform(AST, _Options) ->
   Map = entexit_states(AST),
   io:format("~nstates:~n~p~n",[Map]),
-  io:format("~ntransitions to change:~n~p~n",[change_transitions(AST,Map)]),
-  AST.
+  io:format("~nold AST:~n~p~n",[AST]),
+  NewAST = change_transitions(AST,Map),
+  io:format("~nnew AST:~n~p~n",[NewAST]),
+  NewAST.
 
 change_transitions(AST,Map) ->
   lists:map
@@ -23,7 +23,9 @@ change_transitions(AST,Map) ->
 		  TransitionList ->
 		    {clause,L1,A,L2,
 		     [{record,L3,uml_state,
-		       rewrite_transitions(Name,TransitionList,Map)}]}
+		       [{record_field,L1,{atom,L3,transitions},
+			 rewrite_transitions(Name,TransitionList,Map)}|
+			other_records(transitions,Items)]}]}
 		end;
 		(Other) -> Other
 	    end, Clauses)};
@@ -45,27 +47,42 @@ rewrite_transition(FromState,T={record,L1,transition,Items},Map) ->
   {'fun',L2,{clauses,Clauses}} = Fun,
   OtherRecords = other_records(guard,Items),
   {record,L1,transition,
-   [{'fun',L2,{clauses,lists:map(fun (Clause) -> rewrite_clause(IsExternal,Clause,FromState,ToState,Map) end, Clauses)}}|OtherRecords]}.
+   [{record_field,L1,{atom,L1,guard},
+     {'fun',L2,{clauses,lists:map(fun (Clause) -> rewrite_clause(IsExternal,Clause,FromState,ToState,Map) end, Clauses)}}}|OtherRecords]}.
 
 rewrite_clause(IsExternal,Clause,FromState,ToState,Map) ->
   {clause,L2,P1,P2,Code} = Clause,
-  {clause,L2,P1,P2,
-  if
-    IsExternal ->
-      {value,{_,{_,Exiting}}} = lists:keysearch(FromState,1,Map),
-      {value,{_,{Entering,_}}} = lists:keysearch(ToState,1,Map),
-      if
-	Entering=/=void, Exiting=/=void ->
-	  compose_code(false,compose_code(false,Code,Exiting),Entering);
-	Entering=/=void ->
-	  compose_code(true,Code,Entering);
-	Exiting=/=void ->
-	  compose_code(false,Code,Exiting);
-	true ->
-	  Code
-      end;
-    true -> Code
-  end}.
+  RawProcessTerm = 
+    case length(P1) of
+      2 -> lists:nth(1,P1);
+      3 -> lists:nth(2,P1)
+    end,
+  ProcessTerm = 
+    case RawProcessTerm of
+      {'var',_,'_'} ->
+	{atom,L2,void};
+      Other ->
+	Other
+    end,
+  io:format("ProcessTerm is ~p~n",[ProcessTerm]),
+  NewCode =
+    if
+      IsExternal ->
+	{value,{_,{_,Exiting}}} = lists:keysearch(FromState,1,Map),
+	{value,{_,{Entering,_}}} = lists:keysearch(ToState,1,Map),
+	if
+	  Entering=/=void, Exiting=/=void ->
+	    compose_code(false,compose_code(false,Code,Exiting,ProcessTerm),Entering,ProcessTerm);
+	  Entering=/=void ->
+	    compose_code(true,Code,Entering,ProcessTerm);
+	  Exiting=/=void ->
+	    compose_code(false,Code,Exiting,ProcessTerm);
+	  true ->
+	    Code
+	end;
+      true -> Code
+    end,
+  {clause,L2,P1,P2,NewCode}.
 
 not_is_internal({atom,_,true}) ->
   false;
@@ -103,51 +120,61 @@ other_records(Name,[First|Rest]) ->
 
 %% entry:
 %% for each clause (with same clause variables):
-%% case eval(code) of
-%%   {true,F} -> {true,fun (X) -> Entry(F(X)) end};
+%%
+%% case Code of
+%%   {true,F} ->
+%%     {true,
+%%        fun (X) -> OtherFun(process,F(X)) end}};
 %%   Other -> Other
-%% end.
-
-%% exit:
-%% for each clause (with same clause variables):
-%% case eval(code) of
-%%   {true,F} -> {true,fun (X) -> F(Exit(X)) end};
-%%   Other -> Other
-%% end.
-
-%% so, compose(Entry,F,X) or compose(F,Exit,X) or
-%% compose(Entry,compose(F,Exit,X)).
+%% end
+%%          
 %%  
 
-compose_code(Pre,Code,OtherFun) ->
-  {'case',46,
-   Code,
-   [{clause,47,
-     [{tuple,47,[{atom,47,true},{var,47,'___F'}]}],
-     [],
-     [{tuple,48,
-       [{atom,48,true},
-	{'fun',49,
-	 {clauses,
-	  [{clause,49,
-	    [{var,49,'___X'}],
-	    [],
-	    if
-	      Pre ->
-		[{call,50,
-		  OtherFun,
-		  [{call,50,
-		    {var,50,'___F'},
-		    [{var,50,'___X'}]}]}];
-	      true ->
-		[{call,50,
-		  {var,50,'___F'},
-		  [{call,50,
-		    OtherFun,
-		    [{var,50,'___X'}]}]}]
-	    end}]}}]}]},
-    {clause,52,
-     [{var,52,'___Other'}],
-     [],
-     [{var,52,'___Other'}]}]}.
+compose_code(Pre,Code,OtherFun,ProcessTerm) ->
+  io:format("Code is~n~p~nOtherFun=~n~p~n",[Code,OtherFun]),
+  [
+   {'case',46,
+    {block,46,Code},
+    [
+     {clause,47,
+      [{tuple,47,[{atom,47,true},{var,47,'___ActionFun'}]}],
+      [],
+      [{tuple,48,
+	[{atom,48,true},
+	 {'fun',49,
+	  {clauses,
+	   [{clause,49,
+	     [{var,49,'___DataState'}],
+	     [],
+	     if
+	       Pre ->
+		 [{call,50,
+		   {var,50,'___ActionFun'},
+		   [{call,50,
+		     OtherFun,
+		     [ProcessTerm,{var,50,'___DataState'}]}]}];
+	       true ->
+		 [{call,50,
+		   OtherFun,
+		   [ProcessTerm,
+		    {call,50,
+		     {var,50,'___ActionFun'},
+		     [{var,50,'___DataState'}]}]}]
+	     end}]}}]}]},
+
+     {clause,52,
+      [{var,52,'___Other'}],
+      [],
+      [{var,52,'___Other'}]}
+    ]}
+  ].
+
+test() ->
+  %% rr("src/records.hrl").
+  [T]=(meaner_machine:state(idle))#uml_state.transitions,
+  G = T#transition.guard,
+  {true,F} = G({acquire,f},b,c),
+  F(a).
+
+  
 
