@@ -13,7 +13,7 @@
 -spec signal(pid(),any()) -> any().
 signal(To,Msg) ->
   ?LOG("signal ~p to ~p~n",[Msg,To]),
-  To!Msg.
+  To!{message,Msg}.
 
 
 -spec assign(any(),atom(),any()) -> any().

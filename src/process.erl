@@ -189,7 +189,7 @@ loop(PermissionsState) ->
 		   end, State#process.machines)});
 
 	_ ->
-	  ?LOG
+	  io:format
 	    ("*** ~p: warning: received strange message~n~p~n",
 	     [self(),RawMsg]),
 	  loop(State)

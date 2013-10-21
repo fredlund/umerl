@@ -78,8 +78,8 @@ rewrite_clause(IsExternal,Clause,FromState,ToState,Map) ->
   NewCode =
     if
       IsExternal ->
-	{value,{_,{_,Exiting}}} = lists:keysearch(FromState,1,Map),
-	{value,{_,{Entering,_}}} = lists:keysearch(ToState,1,Map),
+	{_,Exiting} = find_state(FromState,Map),
+	{Entering,_} = find_state(ToState,Map),
 	if
 	  Entering=/=void, Exiting=/=void ->
 	    compose_code(false,compose_code(true,Code,Exiting,ProcessTerm),Entering,ProcessTerm);
@@ -94,6 +94,16 @@ rewrite_clause(IsExternal,Clause,FromState,ToState,Map) ->
     end,
   {clause,L2,P1,P2,NewCode}.
 
+find_state(StateName,Map) ->
+  case lists:keysearch(StateName,1,Map) of
+    {value,{_,Res}} ->
+      Res;
+    _ ->
+      io:format
+	("*** Error: state ~p not defined~n",[StateName]),
+      throw(bad)
+  end.
+
 not_is_internal({atom,_,true}) ->
   false;
 not_is_internal(_) ->
@@ -106,7 +116,8 @@ entexit_states(AST) ->
 	   (fun ({clause,_,[{atom,_,Name}],_,[{record,_,uml_state,Items}]}) ->
 		{Name,
 		 {item_in_record(entry,Items,void),
-		  item_in_record(exit,Items,void)}}
+		  item_in_record(exit,Items,void)}};
+		(_) -> Acc
 	    end,
 	    Clauses)++
 	   Acc;
