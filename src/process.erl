@@ -8,12 +8,7 @@
 %% To be consistent self-transitions should probably abort do actions,
 %% and restart them, and maybe similarly internal transitions should not.
 
-%% Remains:
-%% - do some testing
-%% - do model checking.
-%% 
-
--compile(export_all).
+-export([start/1,start/2]).
 
 -include("records.hrl").
 
@@ -41,9 +36,11 @@
 -define(LOG(X,Y), ok).
 -endif.
 
+-spec start([{atom(),any()}]) -> any().
 start(MachineSpecs) ->
   start(MachineSpecs,fun (_) -> ok end).
 
+-spec start([{atom(),any()}],fun((any())->any())) -> any().
 start(MachineSpecs,InitVars) ->
   Memory = ets:new(private,[public]),
   InitVars({in_process,Memory}),
@@ -121,7 +118,7 @@ loop(PermissionsState) ->
 	    lists:foldl
 	      (fun (ReadTransition,Enabled) ->
 		   Guard = ReadTransition#transition.guard,
-		   case Guard({in_process,State#process.memory}, DataState) of
+		   case check_guard(Guard, data, DataState, State) of
 		     {true,GuardAction} ->
 		       [{GuardAction,ReadTransition,Machine}|Enabled];
 		     false ->
@@ -140,8 +137,8 @@ loop(PermissionsState) ->
 		   DataState,
 		   StateName,
 		   ChosenTransition#transition.next_state,
-		   NewMachine#machine.mailbox,
-		   Machine#machine.module),
+		   NewMachine,
+		   State),
 	      NewerMachine =
 		case get(var_write) of
 		  true ->
@@ -275,7 +272,7 @@ try_receive_msg(Msg,Transitions,DataState,State) ->
   lists:foldl
     (fun (Transition,Collected) ->
 	 Guard = Transition#transition.guard,
-	 case Guard(Msg, {in_process,State#process.memory}, DataState) of
+	 case check_guard(Guard,{msg,Msg}, DataState, State) of
 	   false -> Collected;
 	   {true,GuardAction} ->
 	     ?LOG
@@ -285,16 +282,27 @@ try_receive_msg(Msg,Transitions,DataState,State) ->
 	 end
      end, [], Transitions).
 
-run_guard_action(GuardAction,DataState,FromState,ToState,Mailbox,Module) ->
+check_guard(Guard, {msg,Msg}, DataState, State) ->
+  Guard(Msg, {in_process,State#process.memory}, DataState);
+check_guard(Guard, _, DataState, State) ->
+  Guard({in_process,State#process.memory}, DataState).
+
+run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
   ?LOG("running guard action~n",[]),
+  Mailbox = Machine#machine.mailbox,
   NewMailbox =
     if
       FromState =/=  ToState ->
-	NewState = Module:state(ToState),
+	NewState = (Machine#machine.module):state(ToState),
 	Defer = NewState#uml_state.defer,
 	if
-	  Defer =/= all -> lists:filter(Defer,Mailbox);
-	  true -> Mailbox
+	  Defer == all -> Mailbox;
+	  Defer == none -> [];
+	  true ->
+	    lists:filter
+	      (fun (Msg) -> 
+		   Defer(Msg,DataState,{in_process,State#process.memory})
+	       end, Mailbox)
 	end;
       true -> Mailbox
   end,

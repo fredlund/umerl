@@ -30,7 +30,7 @@ test:
 	erl -pa ebin -run test test -run erlang halt
 
 edoc: 
-	erl -noshell -run edoc_run files '["linkem.erl"]' '[{dir,"doc"}]'
+	erl -noshell -run edoc_run files '["src/process.erl","src/machine.erl","src/uml.erl"]' '[{dir,"doc"}]'
 
 $(DOCDIR)/%.html: %.erl
 	erl -noshell -run edoc_run file '"$<"' '[{dir,"$(DOCDIR)"}]'

@@ -1,6 +1,12 @@
 -type actionfun() ::
 	fun((any()) -> any()).
 
+-type statefun() ::
+	fun((any(),any()) -> any()).
+
+-type deferfun() ::
+	fun((any(),any(),any()) -> boolean()).
+
 -type rcv_triggerfun() ::
 	fun((any(),any(),any()) -> {true,actionfun()} | false).
 
@@ -32,13 +38,13 @@
 	  %% May be all, or a function
 	  %% (over messages, object state and machine state).
 	  %% Default is all.
-	  defer=all :: 'all' | 'none' | fun(), 
+	  defer=all :: 'all' | 'none' | deferfun(),
 	  %% Entry action
-	  entry=void :: 'void' | fun(),
+	  entry=void :: 'void' | statefun(),
 	  %% Do action
 	  do=void :: 'void' | fun(),
 	  %% Exit action
-	  exit=void :: 'void' | fun()
+	  exit=void :: 'void' | statefun()
 	}).
 
 	 

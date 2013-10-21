@@ -1,6 +1,6 @@
 -module(machine).
 
--compile(export_all).
+-export([start/4]).
 
 -include("records.hrl").
 
@@ -24,6 +24,7 @@
 
 %% Handle defers
 
+-spec start(atom(),any(),pid(),any()) -> any().
 start(Module,InitArg,Process,Memory) ->
   {UMLStateName,DataState} = Module:init(InitArg),
   loop
