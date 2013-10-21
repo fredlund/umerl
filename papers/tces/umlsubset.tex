@@ -1,4 +1,4 @@
-\section{UML Subset}
+\section{UML Subset and Semantics}
 \label{sec:umlsubset}
 
 \todo{Develop these bullet points}
@@ -15,7 +15,7 @@
   mostrados anteriormente.
 \end{itemize}
 
-\todo{Texto traído del paper de UML a Uppaal}
+\todo{Check: texto traído del paper de UML a Uppaal}
 The UML models considered in the formalism are divided into the static
 model (to represent class diagrams and object diagrams), and the
 dynamic model (to represent state diagrams). Describing and
@@ -28,6 +28,7 @@ constructions is justified because they were unnecessary in our domain
 and/or because of our search of an economical mathematical
 representation.
 
+\todo{Check: texto traído del paper de UML a Uppaal}
 Our restrictions to obtain a subset of the language of state diagrams
 are clearly harder than the restrictions on the static model. In this
 case, our justification has to do, mainly, with the simplicity of the
@@ -36,6 +37,389 @@ semantics. Just to mention one example, the allowed state diagrams are
 instances of a given class that are based on the Harel's visual
 formalism of statecharts (\cite{harel}).
 
+\subsection{Rationale}
+The criteria for the selection of the subset of UML have is
+\begin{itemize}
+\item Popular diagrams.
+\item Effective diagrams.
+\item Complementary diagrams.
+\item Clear and common agreed semantics.
+\end{itemize}
+
+\cite{Dobing:2006:UU:1125944.1125949}
+
+\begin{verbatim}
+*** UML Subset
+**** System description
+     The system description is given by a set of diagrams:
+     - 1 class diagram
+     - 1 object diagram
+     - N state machine diagramas (each state machine diagram is
+       related to *one* and *only one* class, ie. a class has several
+       associated state machine diagram)
+
+     The meaning of the system is: each object specified by the object
+     diagram has the properties declared in its class (as usual) and
+     "runs" instances of all state machine diagrams associated to its
+     class.
+
+**** Class diagrams
+     The meaning of a class diagram is the /standard/ one with respect
+     to associations and attributes. Some constraints:
+     - No visibility issues.
+     - Basic types for attributes: bool, int.
+
+     With respect to methods we will have two kind of methods:
+     - Asynchronous methods (<<signal>>): declares an asynchronous
+       message passing to the object, a message that will be treated
+       by *all* the machines that the object "run". Some constraints
+       about the definition:
+       - Input parameters of basic types (bool, int)
+       - No result type neither output parameters
+       - No body
+     - Synchronous methods (default): declares a call-and-return
+       message behaviour. The behaviour will be described by a
+       statement (a body). Some constraints about the definition:
+       - Input parameters of basic types (bool, int)
+       - No  output parameters
+       - The body follows this syntax:
+         | Production                             | Meaning                                  |
+         |----------------------------------------+------------------------------------------|
+         | Stm ::= (Basic_Stm;)*                  | Statements                               |
+         | Basic_Stm ::= Expr := Expr             | Assignment                               |
+         | Basic_Stm ::= Expr.Method_Name(Params) | Send message                             |
+         | Expr ::= Basic_Expr                    | Bool and integer expressions (recursive) |
+         | Expr ::= self(.Property_Name)*         | Navigation                               |
+         | Params ::= (Expr(,Expr)*)?             | Parameters                               |
+         The method return the value in the last statement.
+**** Object diagrams
+     The meaning of an object diagram is the /standard/ one: instances
+     of classes in the class diagram, properly associated with other
+     instances and properly initialised attributes.
+**** State Machine Diagrams
+     - Each state machine diagram is related to *one* and *only one*
+       class.
+     - Since an instance of each state machine will be run in every
+       object of the class, the machine instance has access to every
+       property of its object.
+     - Syntax for triggers: Method_Name(Params) (just asynchronous)
+     - Syntax for guards: Expr (typed as bool)
+     - Syntax for activities: Stm
+     - Syntax for entry, do and exit: Stm
+
+     The most problemantic semantic aspects are (to be discussed):
+     - Signals in Basic_Stm are broadcast (all machines will receive the message)
+     - Call methods in Basic_Stm are time consuming.
+**** Object-oriented issues
+     - Inheritance is easy to manage by replication: a state machine
+       diagram in class A is also a state machine diagram in subclass
+       B.
+
+Por ejemplo, algunas cosas ya se ven:
+
++ Métodos cuyo parámetro es un enumerado, en vez de bool/int.  Cabe decir que 
+un enumerado se puede plantear como un int (véase código C, p.e.).
+
++ Métodos que aceptan como parámetros objetos del sistema. Esto sí que hemos 
+de contemplarlo, creo yo...
+
+
+Lars pregunta por la expresividad del subset de UML que propuse. Como
+veis, basta con un subset tan "sencillo" como el que propongo para tener
+problemas serios de semántica.
+
+> ¿Que son las guardas que son expresibles para una transicion (de un
+> proceso)? Opciones:
+>
+> - Solo se puede expresar guardas sobre el mensaje recibido (o timing),
+> y el estado local de un proceso
+> (igual que procesos en Erlang, mas o menos)
+
+Muy restrictivo pero muy fácil de traducir.
+
+Un poco más expresivo e igual de fácil de implementar es aumentar el
+subset admitiendo definir variables locales a las máquinas (cosa que en
+todo caso creo que sería fundamental).
+
+Si no queremos variables locales en las máquinas podemos usar los
+atributos del objeto pero hay que restringir su acceso a sólo una
+máquina (sería como tener variables locales en las máquinas).
+
+> - Como antes, pero admitimos una condicion simple (no se que significa
+> esto la verdad) sobre un variable compartida en el mismo objeto como
+> el proceso
+
+Quizás sea lo mismo que he estoy diciendo en el párrafo anterior.
+
+Ahora empieza lo bueno:
+
+> - Como antes, pero el variable puede tambien residir en otro proceso
+
+>
+> - Como antes, pero la condicion (en la guarda) puede hablar sobre
+> multiple variables compartidas (ya no es nada simple).
+>
+> La eleccion tiene consequencias en cuanto a performance (mas
+> exprisividad peor performance debido a el locking mas brutal que
+> tenemos que hacer).
+
+Hace falta una semántica de "linealización" (grado de atomicidad de
+ejecución de actividades y evaluación de expresiones).
+
+> Ideas, que queremos?
+
+Para poder razonar sobre el sistema (ya sea manual como
+automáticamente), necesitamos una semántica de atomicidad para las
+transiciones de un estado al otro. Así: como si el sistema estuviera
+congelado se evalua la guarda, si es cierta se consume el mensaje y se
+ejecuta toda la actividad sin que nada más en el sistema avance.
+
+Si admitimos expresar que desde una máquina se puedan modificar
+elementos de cualquier otro objeto, entonces esa semántica exige un
+locking brutal y perderemos paralelismo, además de que complicamos la
+traducción.
+
+Si no admitimos que desde un proceso se acceda a otros objetos entonces
+tenemos una fuerte restricción expresiva.
+
+Entre las restricciones que estaba barajando y que no me satisfacen,
+están:
+
+ - Los atributos son privados.
+ - Sólo hay una máquina por objeto.
+ - Las operaciones <<call>> se ejecutan atómicamente.
+ - Las entry se ejecutan tras las transiciones pero entre medias el
+   sistema puede evolucionar (es decir, la guarda no está garantizada).
+
+
+Subject: Restricciones al subset de UML
+To: Julio Mariño <xmarinno@gmail.com>, Ricardo Rodríguez <rjrodriguez@fi.upm.es>, Lars-Åke Fredlund <lfredlund@fi.upm.es>
+Date: Wed, 09 Oct 2013 14:11:47 +0200 (1 week, 4 days, 19 hours ago)
+
+
+- Todos los métodos son signal.
+
+- Todos los atributos (y roles) son private.
+
+- Sólo se pueden modificar los valores de los atributos, no los links de
+  las asociaciones.
+
+- Las transiciones son linealizables. Una forma de verlo es que una
+  transición "[G] T / A" (guarda, trigger, activity) sucede de forma
+  atómica o no sucede.
+
+Veamos qué somos capaces de escribir con esto.
+
+Empiezo por lo que no entiendo:
+
+> - Las transiciones no son linealizables.
+> (se puede declarar que parte de una transicion -- una actividad --
+> es atomica pero solo con respeto a otras actividades atomicas).
+
+Si no son linealizables... ¿Cuál es el significado de dos submáquinas
+concurrentes en el mismo objeto con la misma transición con actividad
+"i = i + 1;" siendo i un atributo del objeto?
+
+Yo declararía semántica linealizable (o serializable, como debamos
+decirlo) [1,2].
+
+> Otro variante (lo siento por molestar y confundir):
+>
+> - Hay dos tipos de objetos, activos (que contienen
+> procesos/machinas/threads)
+> y los pasivos que no contiene procesos/machinas/threads.
+>
+> - Todos los metodos de los objetos activos son signal, y todos los metodos
+> de los objetos no activos son non-signal. Un metodo de un objeto
+> pasivo nunca
+> puede mandar un mensaje (llamar un metodo de un objeto activo).
+>
+> - Todos los atributos de un objeto activo son private (no se que esta
+> significa,
+> pero suena bien :-)
+>
+> - En una guarda de un signal solo se puede referir a atributos del objeto
+> donde reside su machina (y el mensaje, claro, y algun atributo privado de la
+> machina). No se puede hacer llamadas a metodos en otros objetos, o
+> llamadas a metodos dentro el objeto que tienen efectos laterales.
+>
+> - En una action se puede hacer casi todo. LLamar metodos de objetos pasivos,
+> llamar metodos (mandar mensjaes) de objetos activos, etc.
+
+Con todo esto no se me plantean dudas, es "doable". Yo no lo haría
+porque nos complica explicar el subset en el artículo y no aporta mucha
+expresividad.
+
+[1] http://en.wikipedia.org/wiki/Linearizability#Linearizability_versus_serializability
+[2] http://stackoverflow.com/questions/4179587/difference-between-linearizability-and-serializability
+
+On Wednesday, October 16, 2013 04:05:14 PM Lars-Ake Fredlund wrote:
+> On 10/16/2013 03:38 PM, Ricardo J. Rodríguez (UPM) wrote:
+> > Buenas Lars,
+> > 
+> > On Wednesday, October 16, 2013 03:26:07 PM Lars-Ake Fredlund wrote:
+> >> Algunas dudas, que quiza se puede aclarar leyendo "el libro", pero
+> >> seguro que sepais las respuestas.
+> >> 
+> >> 1. Que pasa con las acciones entry, do, y exit solo si se hay una
+> >> transicion que termina en el estado de origin? Se ejecuta o no se
+> >> ejecuta? (supongo la interpretacion normal seria que no se ejecuta)
+> > 
+> > Quieres decir un estado que no tiene ninguna transición de salida?
+> > Entonces esá mal, porque deberría de tener una transición, sin evento,
+> > al punto que representa la finalización de la SM (un punto negro rodeado
+> > de un círculo, en notación UML)
+> 
+> No, hay por ejemplo un estado A, y A tiene una transicion A --hello--> A,
+> es decir la transicion no sale del estado. Se corre entry, exit, y do
+> para cada vez se toma esta transicion o no?
+
+Pero es una self-transition, o es una internal transition? Ninguna de las dos 
+sale del estado, pero las interpretaciones de UML son diferentes :)
+
+"In the absence of entry and exit actions, internal transitions would be 
+identical to self-transitions (transitions in which the target state is the 
+same as the source state). In fact, in a classical Mealy machine, actions are 
+associated exclusively with state transitions, so the only way to execute 
+actions without changing state is through a self-transition (depicted as a 
+directed loop in Figure 1 from the top of this article). However, in the 
+presence of entry and exit actions, as in UML statecharts, a self-transition 
+involves the execution of exit and entry actions and therefore it is 
+distinctively different from an internal transition.
+
+In contrast to a self-transition, no entry or exit actions are ever executed 
+as a result of an internal transition, even if the internal transition is 
+inherited from a higher level of the hierarchy than the currently active 
+state. Internal transitions inherited from superstates at any level of nesting 
+act as if they were defined directly in the currently active state."
+
+Fuente: http://en.wikipedia.org/wiki/UML_state_machine#Internal_transitions
+
+> 
+> >> 2. Cuando se ejecuta una accion exit?
+> > 
+> > Siempre es la última actividad que se realiza al dejar el estado
+> > 
+> >> a. Para ejecutarlo tenemos que saber que hay una transicion que sale del
+> >> estado (segun la pregunta anterior), y que esta enabled, y que vamos a
+> >> ejecutarla).
+> >> 
+> >> b. Pero supongo que deberiamos ejecutar el exit antes de la accion en el
+> >> arco de la transicion, no?
+> > 
+> > yep
+> > 
+> >> c. Entonces que pasa si la accion del exit invalida la guarda de la
+> >> transicion que hemos elegido??
+> > 
+> > Fallo de diseño?
+> 
+> Quiza, pero fallo de diseño de UML, o fallo en las machinas de estado, o
+> fallo en la interpretacion? :-)
+
+fallo del diseñador, o en la interpretación de UML del diseñador :))
+
+> 
+> >> - Solo hemos elegido de ejecutar el exit porque vamos a salir del estado
+> >> - Pero al ejecutar el exit no podemos salir del estado como no hay
+> >> ninguna transicion enabled... :-)
+> > 
+> > El evento/guarda en una transición es opcional, con lo que podría existir
+> > una transición sin evento y/o guarda, indicando que se transitará a otro
+> > estado tras la finalización de las actividades entry, do, y exit,
+> > ejecutadas en el citado orden.
+> > 
+> > Más claro ahora? :)
+> 
+> No lo se yo.
+> 
+> > Salud!
+> > Ricardo
+> > 
+> >> Saludos,
+> >> Lars-Ake
+
+El aspecto de la composicionalidad es fundamental en el subset y
+semántica que elijamos.
+
+Tenemos un ejemplo un poco abstracto.
+
+Imaginemos dos máquinas (M1 y M2). Diseñadas independientemente.  Una
+para tratar los eventos e1 y la otra para tratar los eventos e2.
+
+M1 = {s1 -e1-> s2, s2 -e1-> s1}
+M2 = {s3 -e2-> s4, s4 -e2-> s3}
+
+Creo que se entiende.
+
+Las podemos componer de dos formas:
+
+- En paralelo: M3 = M1 || M2
+
+- En "secuencial": M4 = {M1 -es-> M2, M2 -es-> M1} (un tercer evento
+  provoca el switch entre máquinas).
+
+En el caso paralelo, es probable que sea más "eficaz" que M1 descarte
+los eventos e2 y que M2 descarte los eventos e1. Para ello, la semántica
+por defecto de "discard all" es buena.
+
+En el caso secuencial, es probable que sea necesario que los mensajes se
+procesen tras el switch. Para ello la semántica por defecto de "discard
+all" es mala y tendríamos que poner un "defer / all" en todos los
+estados.
+
+Lars argumenta que mejor (aunque contra UML) sería una semántica por
+defecto "defer / all" y que sería fácil provocar un "discard all"
+encapsulando la máquina en un "superstate" que descarte todos los
+mensajes (hasta donde yo sé habría que nombrar todos los eventos a
+descartar, técnicamente en una transición cada uno).
+
+A propósito, en relación con los "superstates" (adjunto un scaneado del
+Fowler), hay una construcción que yo no recordaba que es el history
+pseudostate. No importa mucho porque su semántica es la
+razonable. Tampoco nos importa porque no estamos para atacar superstates
+en este paper.
+
+Defer: by default semantics is discard
+\end{verbatim}
+
+\subsection{Semantics}
+
+\subsubsection{Class Diagrams}
+Class diagrams are the most used and the most useful UML diagrams
+according to \cite{Dobing:2006:UU:1125944.1125949}. It is not
+surprising that there exists a common consensus about its
+semantics. Anyhow, we offer a formal but mathematically unceremonious interpretation of the main constructs in class diagrams:
+\begin{itemize}
+\item Classes are sets of objects\footnote{Objects are conceptual
+    elements of the system that can be
+    \emph{addressed}.}.
+\item Associations are binary relations.
+\item Properties are projections on the associations.
+\item Attributes are associations.
+\item Multiplicities are constraints in associations.
+\end{itemize}
+
+\todo{Show several simple examples}
+
+\subsubsection{Object Diagrams}
+
+\subsubsection{State Diagrams}
+This is clearly one of the most controversial UML diagram. With a
+extremely big and loose description of its semantics in the standard,
+many different interpretations are given to its sometimes not unique
+syntax.
+
+
+
+\subsubsection{Sequence Diagrams}
+Although in this paper we do not contemplate the translation of
+sequence diagrams, we consider sequence diagrams as description of
+positive or negative scenarios of message exchage between objects in
+the system. Anyway, we use sequence diagramas to describe positive
+scenarios in our case study that, eventually can be encoded as
+properties to be verified on the automatically generated
+implementation.
 
 %%% Local Variables: 
 %%% mode: latex
