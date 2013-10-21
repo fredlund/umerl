@@ -68,6 +68,7 @@ start(MachineSpecs,InitVars) ->
      {machines=Machines,
       memory=Memory}).
 
+-spec loop(#process{}) -> no_return().
 loop(PermissionsState) ->
   ?LOG("~p: loop(~p)~n",[self(),PermissionsState]),
   State = check_permissions(PermissionsState),

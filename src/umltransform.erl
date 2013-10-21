@@ -179,12 +179,6 @@ compose_code(Pre,Code,OtherFun,ProcessTerm) ->
     ]}
   ].
 
-test() ->
-  %% rr("src/records.hrl").
-  [T]=(meaner_machine:state(idle))#uml_state.transitions,
-  G = T#transition.guard,
-  {true,F} = G({acquire,f},b,c),
-  F(a).
 
   
 

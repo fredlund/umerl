@@ -2,8 +2,8 @@
 
 -module(meaner_machine).
 
--include("../src/umerl.hrl").
 -include("../src/records.hrl").
+-include("../src/umerl.hrl").
 
 -compile(export_all).
 

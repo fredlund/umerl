@@ -35,6 +35,7 @@ start(Module,InitArg,Process,Memory) ->
       uml_state_name=UMLStateName,
       data_state=DataState}).
 
+-spec loop(#machine_int{}) -> no_return().
 loop(State) ->
   ?LOG("~p: loop(~p)~n",[self(),State]),
   UMLPreState =
