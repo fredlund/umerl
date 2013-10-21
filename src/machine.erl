@@ -52,8 +52,6 @@ loop(State) ->
     {ask_transitions,
      {self(),
       UMLPreState#uml_state.type}},
-  Process =
-    {outside_process,self(),State#machine_int.process,State#machine_int.memory},
   receive
     ok ->
       ?LOG("~p received ok",[self()]),
@@ -69,6 +67,10 @@ loop(State) ->
 	  UMLState = (State#machine_int.module):state(NewUMLStateName),
 	  if
 	    UMLState#uml_state.do=/=void ->
+	      Process =
+		{outside_process,self(),
+		 State#machine_int.process,
+		 State#machine_int.memory},
 	      DoProcess =
 		spawn
 		  (fun () ->
