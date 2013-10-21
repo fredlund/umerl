@@ -8,7 +8,7 @@
 -compile(export_all).
 
 init(_Arg) ->
-  {idle, void}.
+  {idle, initarg}.
 
 state(idle) ->
   #uml_state
@@ -42,7 +42,7 @@ state(acquired) ->
 	   fun (release,_Process,_State) -> 
 	       {true,
 		fun (_State) ->
-		    void
+		    voidarg
 		end};
 	       (_,_,_) -> false
 	   end}

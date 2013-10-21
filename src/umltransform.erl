@@ -72,11 +72,11 @@ rewrite_clause(IsExternal,Clause,FromState,ToState,Map) ->
 	{value,{_,{Entering,_}}} = lists:keysearch(ToState,1,Map),
 	if
 	  Entering=/=void, Exiting=/=void ->
-	    compose_code(false,compose_code(false,Code,Exiting,ProcessTerm),Entering,ProcessTerm);
+	    compose_code(false,compose_code(true,Code,Exiting,ProcessTerm),Entering,ProcessTerm);
 	  Entering=/=void ->
-	    compose_code(true,Code,Entering,ProcessTerm);
+	    compose_code(false,Code,Entering,ProcessTerm);
 	  Exiting=/=void ->
-	    compose_code(false,Code,Exiting,ProcessTerm);
+	    compose_code(true,Code,Exiting,ProcessTerm);
 	  true ->
 	    Code
 	end;
