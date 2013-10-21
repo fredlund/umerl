@@ -18,8 +18,6 @@
 
 -include("records.hrl").
 
--type permission() :: 'read' | 'receive' | 'receive_read'.
-
 -record(machine,
 	{
 	  module :: atom(),
@@ -32,7 +30,7 @@
 
 -record(process,
 	{
-	  machines=[] :: #machine{},
+	  machines=[] :: [{pid(),#machine{}}],
 	  memory
 	}).
 

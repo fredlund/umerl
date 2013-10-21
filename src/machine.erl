@@ -5,7 +5,14 @@
 -include("records.hrl").
 
 -record(machine_int,
-	{module,uml_state_name,data_state,process,memory,doer=void}).
+	{
+	  module :: atom(),
+	  uml_state_name :: atom(),
+	  data_state :: any(),
+	  process :: pid(),
+	  memory,
+	  doer=void :: 'void' | pid()
+	}).
 
 -define(debug,true).
 
