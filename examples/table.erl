@@ -11,10 +11,10 @@ adjacent([]) -> [];
 adjacent([X|Xs]) -> lists:zip([X] ++ Xs, Xs ++ [X]).
 
 start_fork() ->
-  spawn_link(fun () -> process:start([{fork,void}]) end).
+  spawn(fun () -> process:start([{fork,void}]) end).
 
 start_philosopher(L,R) ->
-  spawn_link(fun () -> process:start([{philosopher,{L,R}}]) end).
+  spawn(fun () -> process:start([{philosopher,{L,R}}]) end).
 
 test_table() ->
   Left = start_fork(),
