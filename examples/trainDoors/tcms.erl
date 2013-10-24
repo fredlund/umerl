@@ -250,7 +250,8 @@ state(doorsDisabled) ->
                         {true,
                          fun (Process, {D, DS}) ->
                             io:format("Processing notification~n"),
-                            uml:assign(Process, D, DS) % XXX How we can handle this??
+                            uml:assign(Process, D, DS), % XXX How we can handle this??
+                            uml:assign(Process, i, 0)
                          end};
                          (_, _, _) -> false
                     end
