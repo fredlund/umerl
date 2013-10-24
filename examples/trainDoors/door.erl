@@ -38,11 +38,26 @@ state(closedAndDisabled) ->
                  guard       =
                     fun (enable, Process, _State) ->
                         {true,
-                         fun (_State) ->
+                         fun (Process) ->
                             uml:assign(Process, status, 'enabled')
                          end};
                         (_, _, _) -> false
-                    end}
+                    end
+                },
+                #transition
+                {type        =   'receive',
+                 next_state  =   closedAndDisabled_entry,
+                 is_internal = true,
+                 guard       =
+                    fun (disable, Process, _State) ->
+                        {true,
+                         fun (X) ->
+                            X
+                         end};
+                        (_, _, _) -> false
+                    end
+                },
+
             ]
     };
 
