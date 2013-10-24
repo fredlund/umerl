@@ -1,9 +1,10 @@
 #SOURCES = $(notdir $(wildcard src/*.erl))
 #EXAMPLES = $(wildcard examples/*.erl)
 
-vpath %.erl src examples
+vpath %.erl src examples examples/trainDoors
 BEAMS = $(patsubst src/%.erl,ebin/%.beam,$(wildcard src/*.erl))
 BEAMS += $(patsubst examples/%.erl,ebin/%.beam,$(wildcard examples/*.erl))
+BEAMS += $(patsubst examples/trainDoors/%.erl,ebin/%.beam,$(wildcard examples/trainDoors/*.erl))
 
 HTMLS = $(patsubst %.erl,doc/%.html,$(SOURCES))
 DOCDIR=doc
