@@ -28,7 +28,7 @@
 	  memory
 	}).
 
--define(debug,true).
+%%-define(debug,true).
 
 -ifdef(debug).
 -define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).

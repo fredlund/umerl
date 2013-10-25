@@ -90,6 +90,16 @@ t5_test() ->
   end,
   timer:sleep(200).
 
+locker_test() ->
+  Locker =
+    spawn_link(fun () -> process:start([{locker,void}]) end),
+  Client1 =
+    spawn_link(fun () -> process:start([{locker_client,Locker}]) end),
+  Client2 =
+    spawn_link(fun () -> process:start([{locker_client,Locker}]) end),
+  timer:sleep(200).
+    
 
+			   
 
   

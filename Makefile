@@ -28,7 +28,7 @@ dialyzer:
 	dialyzer ebin/*beam
 
 test:
-	erl -pa ebin -run test test -run erlang halt
+	erl -pa ebin -noshell -run test test -run erlang halt
 
 edoc: 
 	erl -noshell -run edoc_run files '["src/process.erl","src/machine.erl","src/uml.erl"]' '[{dir,"doc"}]'
