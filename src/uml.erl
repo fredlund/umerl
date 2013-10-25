@@ -1,6 +1,6 @@
 -module(uml).
 
--export([signal/2,assign/3,read/2]).
+-export([signal/2,assign/3,read/2,call/2,return/2]).
 
 %%-define(debug,true).
 
@@ -15,6 +15,18 @@ signal(To,Msg) ->
   ?LOG("signal ~p to ~p~n",[Msg,To]),
   To!{message,Msg}.
 
+-spec call(pid(),any()) -> any().
+call(To,Msg) ->
+  To!{message,{call,Msg,self()}},
+  receive
+    {return,Result} ->
+      Result
+  end.
+
+-spec return(pid(),any()) -> any().
+return(To,Msg) ->
+  To!{return,Msg},
+  Msg.
 
 -spec assign(any(),atom(),any()) -> any().
 assign({in_process,Table},Var,Value) ->
