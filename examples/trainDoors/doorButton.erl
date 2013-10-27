@@ -41,8 +41,8 @@ state(pressed_entry) ->
                     fun (_M, _Process, Door) ->
                         {true,
                          fun (Door) ->
-			     uml:signal(Door, buttonPressed),
-			     Door
+			                uml:signal(Door, buttonPressed),
+			                Door
                          end};
                         (_, _, _) -> false
                     end}

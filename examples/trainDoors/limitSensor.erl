@@ -4,8 +4,8 @@
 -include("../../src/umerl.hrl").
 -compile(export_all).
 
-init(_Arg) ->
-    {idle, void}.
+init(D) ->
+    {idle, D}.
 
 state(idle) ->
     #uml_state
@@ -45,10 +45,10 @@ state(activated) ->
 				{type        =   'read',
                  next_state  =   limitReached,
                  guard       =
-                        fun(Process, _) ->
+                        fun(Process, D) ->
                             case uml:read(Process, isLimitReached) of
                                 true ->
-                                    {true, fun(_State) ->
+                                    {true, fun(D) ->
                                                 uml:signal(D, limitReached)
                                            end};
                                 false ->

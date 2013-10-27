@@ -4,8 +4,8 @@
 -include("../../src/umerl.hrl").
 -compile(export_all).
 
-init(_Arg) ->
-    {notPressed, void}.
+init(TCMS) ->
+    {notPressed, TCMS}.
 
 state(notPressed) ->
     #uml_state
@@ -37,9 +37,9 @@ state(pressed_entry) ->
                 {type        =   'read',
                  next_state  =   pressed,
                  guard       =
-                    fun (_M, _Process, _State) ->
+                    fun (_M, _Process, TCMS) ->
                         {true,
-                         fun (_State) ->
+                         fun (TCMS) ->
                             uml:signal(TCMS, enableDoors) % Send signal
                          end};
                         (_, _, _) -> false

@@ -4,8 +4,8 @@
 -include("../../src/umerl.hrl").
 -compile(export_all).
 
-init(_Arg) ->
-    {idle, void}.
+init(D) ->
+    {idle, D}.
 
 state(idle) ->
     #uml_state
@@ -45,10 +45,10 @@ state(activated) ->
 				{type        =   'read',
                  next_state  =   obstacleDetected,
                  guard       =
-                        fun(Process, _) ->
+                        fun(Process, D) ->
                             case uml:read(Process, anyObstacleDetected) of
                                 true ->
-                                    {true, fun(_State) ->
+                                    {true, fun(D) ->
                                                 uml:signal(D, obsDetected)
                                            end};
                                 false ->
