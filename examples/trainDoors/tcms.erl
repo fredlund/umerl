@@ -18,13 +18,9 @@ state(movingTrain) ->
                  next_state  =   idle,
                  guard       =
                     fun (Process, _State) ->
-                        if 
-                            uml:read(Process, speed) == 0  ->
-                                {true, fun(X) ->
-                                        X
-                                       end};
-                            true -> 
-                                false
+                        case uml:read(Process, speed) of
+			  0  -> {true, fun(X) -> X end};
+			  _ -> false
                         end
                     end}
             ]
@@ -60,7 +56,7 @@ state(enablingDoors) ->
             [
                 #transition
 				{type        =   'read',
-                 next_state  =   enableDoor_entry,
+                 next_state  =   enabledDoor_entry,
                  guard       =
                         fun(Process, _) ->
                             if 
@@ -92,7 +88,7 @@ state(enablingDoors) ->
             ]
     };
 
-state(enableDoor_entry) ->
+state(enabledDoor_entry) ->
     #uml_state
     {name = enabledDoor_entry,
         type = 'read',
@@ -162,7 +158,7 @@ state(disablingDoors) ->
             [
                 #transition
 				{type        =   'read',
-                 next_state  =   disableDoor_entry,
+                 next_state  =   disabledDoor_entry,
                  guard       =
                         fun(Process, _) ->
                             if 
@@ -195,7 +191,7 @@ state(disablingDoors) ->
     };
 
 
-state(disableDoor_entry) ->
+state(disabledDoor_entry) ->
     #uml_state
     {name = disabledDoor_entry,
         type = 'read',
@@ -260,7 +256,7 @@ state(doorsDisabled) ->
                  #transition
                 {type        =   'read',
                  next_state  =   movingTrain,
-                 guard       =   %XXX This transition may represent a TOUT expiration
+                 %%XXX This transition may represent a TOUT expiration
                  guard       =
                     fun (timeoutEXPIRED, Process, _State) ->
                         {true,
@@ -276,5 +272,5 @@ state(doorsDisabled) ->
                 io:format("Setting a timout...~n"), %XXX Something must be added to generate a self-signal representing the expiration of a TOUT
                 State
             end
-    };
+    }.
 

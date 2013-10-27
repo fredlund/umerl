@@ -9,7 +9,7 @@ start() ->
   OpenSensor = spawn_link(fun () -> process:start({limitSensor,Door}) end),
   CloseSensor = spawn_link(fun () -> process:start({limitSensor,Door}) end),
   ObstacleSensor = spawn_link(fun () -> process:start({obstacleSensor,Door}) end),
-  Door = spawn_link(fun () -> process:start({door,Traction, OpenSensor, CloseSensor, ObstacleSensor}) end),
+  Door = spawn_link(fun () -> process:start({door,{Traction, OpenSensor, CloseSensor, ObstacleSensor}}) end),
   DoorButton = spawn_link(fun () -> process:start({doorButton,Door}) end).
 
 

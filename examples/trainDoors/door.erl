@@ -5,8 +5,8 @@
 
 -compile(export_all).
 
-init(T, OpenSensor, CloseSensor, ObsSensor) ->
-    {closedAndDisabled_entry, T, OpenSensor, CloseSensor, ObsSensor}.
+init({T, OpenSensor, CloseSensor, ObsSensor}) ->
+    {closedAndDisabled_entry, {T, OpenSensor, CloseSensor, ObsSensor}}.
 
 state(closedAndDisabled_entry) ->
     #uml_state

@@ -54,11 +54,18 @@ rewrite_transition(FromState,T={record,L1,transition,Items},Map) ->
   IsExternal = not_is_internal(item_in_record(internal_state,Items,void)),
   {atom,_,ToState} = item_in_record(next_state,Items,void),
   Fun = item_in_record(guard,Items,void),
-  {'fun',L2,{clauses,Clauses}} = Fun,
-  OtherRecords = other_records(guard,Items),
-  {record,L1,transition,
-   [{record_field,L1,{atom,L1,guard},
-     {'fun',L2,{clauses,lists:map(fun (Clause) -> rewrite_clause(IsExternal,Clause,FromState,ToState,Map) end, Clauses)}}}|OtherRecords]}.
+  case Fun of
+    {'fun',L2,{clauses,Clauses}} ->
+      OtherRecords = other_records(guard,Items),
+      {record,L1,transition,
+       [{record_field,L1,{atom,L1,guard},
+	 {'fun',L2,{clauses,lists:map(fun (Clause) -> rewrite_clause(IsExternal,Clause,FromState,ToState,Map) end, Clauses)}}}|OtherRecords]};
+    Other ->
+      io:format
+	("*** Error: unexpected transition format~n~p~n",
+	 [Fun]),
+      throw(bad)
+  end.
 
 rewrite_clause(IsExternal,Clause,FromState,ToState,Map) ->
   {clause,L2,P1,P2,Code} = Clause,
