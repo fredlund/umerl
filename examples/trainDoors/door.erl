@@ -1,6 +1,8 @@
 % Door SM
 -module(door).
 -include("../../src/records.hrl").
+-include("../../src/umerl.hrl").
+
 -compile(export_all).
 
 init(_Arg) ->
@@ -56,8 +58,7 @@ state(closedAndDisabled) ->
                          end};
                         (_, _, _) -> false
                     end
-                },
-
+                }
             ]
     };
 

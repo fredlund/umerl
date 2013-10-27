@@ -1,10 +1,11 @@
 % DoorButton SM
 -module(doorButton).
 -include("../../src/records.hrl").
+-include("../../src/umerl.hrl").
 -compile(export_all).
 
-init(_Arg) ->
-    {notPressed, void}.
+init(Door) ->
+    {notPressed, Door}.
 
 state(notPressed) ->
     #uml_state
@@ -16,10 +17,11 @@ state(notPressed) ->
                 {type        =   'receive',
                  next_state  =   pressed_entry,
                  guard       =
-                    fun (press, Process, _State) ->
+                    fun (press, Process, State) ->
                         {true,
                          fun (_State) ->
-                            uml:assign(Process, ledStatus, true)
+			     uml:assign(Process, ledStatus, true),
+			     State
                          end};
                         (_, _, _) -> false
                     end}
@@ -36,10 +38,11 @@ state(pressed_entry) ->
                 {type        =   'read',
                  next_state  =   pressed,
                  guard       =
-                    fun (_M, _Process, _State) ->
+                    fun (_M, _Process, Door) ->
                         {true,
-                         fun (_State) ->
-                            uml:signal(Door, buttonPressed)
+                         fun (Door) ->
+			     uml:signal(Door, buttonPressed),
+			     Door
                          end};
                         (_, _, _) -> false
                     end}

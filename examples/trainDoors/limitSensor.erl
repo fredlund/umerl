@@ -1,6 +1,7 @@
 % LimitSensor SM
 -module(limitSensor).
 -include("../../src/records.hrl").
+-include("../../src/umerl.hrl").
 -compile(export_all).
 
 init(_Arg) ->
