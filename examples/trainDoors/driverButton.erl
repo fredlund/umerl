@@ -17,10 +17,11 @@ state(notPressed) ->
                 {type        =   'receive',
                  next_state  =   pressed_entry,
                  guard       =
-                    fun (press, Process, _State) ->
+                    fun (press, Process, TCMS) ->
                         {true,
-                         fun (_State) ->
-                            uml:assign(Process, ledStatus, true) % This is the effect, an internal method called
+                         fun (Process, TCMS) ->
+                            uml:assign(Process, ledStatus, true),
+                            TCMS
                          end};
                         (_, _, _) -> false
                     end}
@@ -40,7 +41,8 @@ state(pressed_entry) ->
                     fun (_M, _Process, TCMS) ->
                         {true,
                          fun (TCMS) ->
-                            uml:signal(TCMS, enableDoors) % Send signal
+                            uml:signal(TCMS, enableDoors), % Send signal
+                            TCMS
                          end};
                         (_, _, _) -> false
                     end}
@@ -58,10 +60,11 @@ state(pressed) ->
                 {type        =   'receive',
                  next_state  =   notPressed,
                  guard       =
-                    fun (switchOff, Process, _State) ->
+                    fun (switchOff, Process, TCMS) ->
                         {true,
-                         fun (_State) ->
-                            uml:assign(Process, ledStatus, false)
+                         fun (Process, TCMS) ->
+                            uml:assign(Process, ledStatus, false),
+                            TCMS
                          end};
                         (_, _, _) -> false
                     end}

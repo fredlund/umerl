@@ -17,11 +17,11 @@ state(notPressed) ->
                 {type        =   'receive',
                  next_state  =   pressed_entry,
                  guard       =
-                    fun (press, Process, State) ->
+                    fun (press, Process, Door) ->
                         {true,
-                         fun (_State) ->
-			     uml:assign(Process, ledStatus, true),
-			     State
+                         fun (State) ->
+			     		 	uml:assign(Process, ledStatus, true),
+			     			State
                          end};
                         (_, _, _) -> false
                     end}
@@ -40,9 +40,9 @@ state(pressed_entry) ->
                  guard       =
                     fun (_M, _Process, Door) ->
                         {true,
-                         fun (Door) ->
+                         fun (State) ->
 			                uml:signal(Door, buttonPressed),
-			                Door
+			                State
                          end};
                         (_, _, _) -> false
                     end}
@@ -60,10 +60,11 @@ state(pressed) ->
                 {type        =   'receive',
                  next_state  =   notPressed,
                  guard       =
-                    fun (switchOff, Process, _State) ->
+                    fun (switchOff, Process, Door) ->
                         {true,
-                         fun (_State) ->
-                            uml:assign(Process, ledStatus, false)
+                         fun (State) ->
+                            uml:assign(Process, ledStatus, false),
+                            State
                          end};
                         (_, _, _) -> false
                     end}

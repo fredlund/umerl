@@ -17,7 +17,7 @@ state(idle) ->
                 {type        =   'receive',
                  next_state  =   activated,
                  guard       =
-                    fun (activate, _Process, _State) ->
+                    fun (activate, _Process, D) ->
                         {true,
                         fun (X) -> X end 
 						 };
@@ -36,7 +36,7 @@ state(activated) ->
                 {type        =   'receive',
                  next_state  =   idle,
                  guard       =
-                    fun (deactivate, _Process, _State) ->
+                    fun (deactivate, _Process, D) ->
                         {true,
                          fun (X) -> X end};
                         (_, _, _) -> false
@@ -49,7 +49,8 @@ state(activated) ->
                             case uml:read(Process, isLimitReached) of
                                 true ->
                                     {true, fun(D) ->
-                                                uml:signal(D, limitReached)
+                                                uml:signal(D, limitReached),
+                                                D
                                            end};
                                 false ->
                                     false
@@ -69,7 +70,7 @@ state(limitReached) ->
                 {type        =   'receive',
                  next_state  =   activated,
                  guard       =
-                    fun (ack, _Process, _State) ->
+                    fun (ack, _Process, D) ->
                         {true,
                         fun (X) -> X end 
 						 };
