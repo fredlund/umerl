@@ -1,13 +1,5 @@
 -module(process).
 
-%% Doubts:
-%% - is there any difference in the handling of do actions between
-%% external and internal transitions?
-%% That is, do internal transitions abort do actions, do self-transitions 
-%% abort do actions?
-%% To be consistent self-transitions should probably abort do actions,
-%% and restart them, and maybe similarly internal transitions should not.
-
 -export([start/1,start/2]).
 
 -include("records.hrl").
