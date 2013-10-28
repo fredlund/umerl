@@ -19,8 +19,8 @@ state(movingTrain) ->
                  guard       =
                     fun (Process, {Doors, TR, DB}) ->
                         case uml:read(Process, speed) of
-			  				0  -> {true, fun(State) -> State end};
-			  				_ -> false
+			    0  -> {true, fun(State) -> State end};
+			    _ -> false
                         end
                     end}
             ]
@@ -41,9 +41,9 @@ state(idle) ->
                          fun (Process, {Doors, TR}) -> 
                             uml:signal(TR, disable),
                             uml:assign(Process, i, 0),
-			    			{Doors, TR, DB}
+			    {Doors, TR, DB}
                          end 
-						 };
+			};
                         (_, _, _) -> false
                     end}
              ]
