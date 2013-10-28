@@ -5,23 +5,45 @@
 -compile(export_all).
 
 init({Doors, TR, DB}) ->
-    {movingTrain, {Doors, TR, DB}}.
+    {idle, {Doors, TR, DB}}.
 
 state(movingTrain) ->
     #uml_state
     {name = movingTrain,
-        type = 'read',
+        type = 'receive',
         transitions=
             [
                 #transition
-                {type        =   'read',
+                {type        =   'receive',
+                 next_state  =   stoppingTrain,
+                 guard       =
+                    fun (stopTrain, Process, {Doors, TR, DB}) ->
+                        {true,
+                         fun (Process, {Doors, TR, DB}) -> 
+                            uml:signal(TR, disable),
+			    			{Doors, TR, DB}
+                         end 
+						 };
+                        (_, _, _) -> false
+                    end}
+            ]
+    };
+    
+state(stoppingTrain) ->
+    #uml_state
+    {name = stoppingTrain,
+        type = 'receive',
+        transitions=
+            [
+                #transition
+                {type        =   'receive',
                  next_state  =   idle,
                  guard       =
-                    fun (Process, {Doors, TR, DB}) ->
-                        case uml:read(Process, speed) of
-			    0  -> {true, fun(State) -> State end};
-			    _ -> false
-                        end
+                    fun (trainStopped, Process, {Doors, TR, DB}) ->
+                        {true,
+                         fun (X) -> X end 
+						 };
+                        (_, _, _) -> false
                     end}
             ]
     };
@@ -39,11 +61,10 @@ state(idle) ->
                     fun (enableDoors, Process, {Doors, TR, DB}) ->
                         {true,
                          fun (Process, {Doors, TR}) -> 
-                            uml:signal(TR, disable),
                             uml:assign(Process, i, 0),
-			    {Doors, TR, DB}
+			    			{Doors, TR, DB}
                          end 
-			};
+						 };
                         (_, _, _) -> false
                     end}
              ]

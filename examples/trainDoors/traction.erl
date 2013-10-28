@@ -5,19 +5,38 @@
 -compile(export_all).
 
 init(_Arg) ->
-    {enabled, void}.
+    {stopped, void}.
 
-state(enabled) ->
+state(stopped) ->
     #uml_state
-    {name = enabled,
+    {name = stopped,
         type = 'receive',
         transitions=
             [
                 #transition
                 {type        =   'receive',
-                 next_state  =   disabled,
+                 next_state  =   moving,
                  guard       =
-                    fun (disable, _Process, _State) ->
+                    fun (enable, _Process, State) ->
+                        {true,
+                        fun (X) -> X end 
+						 };
+                        (_, _, _) -> false
+                    end}
+            ]
+    };
+    
+state(moving) ->
+    #uml_state
+    {name = moving,
+        type = 'receive',
+        transitions=
+            [
+                #transition
+                {type        =   'receive',
+                 next_state  =   breaking,
+                 guard       =
+                    fun (disable, _Process, State) ->
                         {true,
                         fun (X) -> X end 
 						 };
@@ -25,31 +44,37 @@ state(enabled) ->
                     end}
             ],
 		do=
-			fun(Process, State) ->
-				uml:assign(Process, status, enabled),
+			fun(_Process, State) ->
+				io:format("Moving train...~n"),
 				State
 			end
     };
 
-state(disabled) ->
+
+state(breaking) ->
     #uml_state
-    {name = disabled,
-        type = 'receive',
+    {name = breaking,
+        type = 'read',
         transitions=
             [
                 #transition
-                {type        =   'receive',
-                 next_state  =   enabled,
+                {type        =   'read',
+                 next_state  =   stopped,
                  guard       =
-                    fun (enable, _Process, _State) ->
-                        {true,
-                         fun (X) -> X end};
-                        (_, _, _) -> false
-                    end}
+                    fun(Process, T) ->
+                    	case uml:read(Process, speed) of
+                        	0 ->
+                        		{true, fun(State) ->
+                        					uml:signal(T, trainStopped),
+					      					State
+                                       end};
+                            false -> false
+                            end
+						 end}
             ],
 		do= 
-			fun(Process, State) ->
-				uml:assign(Process, status, disabled),
+			fun(_Process, State) ->
+				io:format("Breaking train...~n"),
 				State
 			end
     }.
