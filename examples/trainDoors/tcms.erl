@@ -4,8 +4,8 @@
 -include("../../src/umerl.hrl").
 -compile(export_all).
 
-init(_Arg) ->
-    {movingTrain, void}.
+init(Doors) ->
+    {movingTrain, Doors}.
 
 state(movingTrain) ->
     #uml_state
@@ -17,9 +17,9 @@ state(movingTrain) ->
                 {type        =   'read',
                  next_state  =   idle,
                  guard       =
-                    fun (Process, _State) ->
+                    fun (Process, Doors) ->
                         case uml:read(Process, speed) of
-			  0  -> {true, fun(X) -> X end};
+			  0  -> {true, fun(State) -> State end};
 			  _ -> false
                         end
                     end}
@@ -36,11 +36,12 @@ state(idle) ->
                 {type        =   'receive',
                  next_state  =   enablingDoors,
                  guard       =
-                    fun (enableDoors, Process, _State) ->
+                    fun (enableDoors, Process, Doors) ->
                         {true,
-                         fun (Process) -> 
+                         fun (State) -> 
                             uml:signal(TR, disable),
-                            uml:assign(Process, i, 0)
+                            uml:assign(Process, i, 0),
+			    Doors
                          end 
 						 };
                         (_, _, _) -> false
@@ -59,12 +60,12 @@ state(enablingDoors) ->
                  next_state  =   enabledDoor_entry,
                  guard       =
                         fun(Process, _) ->
-                            if 
-                                uml:read(Process, i) < uml:read(Process, doorLength) ->
+                            case uml:read(Process, i) < uml:read(Process, doorLength) of
+			      true ->
                                     {true, fun(X) ->
                                                 X
                                            end};
-                                true ->
+                                false ->
                                     false
                             end
 						 end
@@ -76,8 +77,9 @@ state(enablingDoors) ->
                         fun(Process, _) ->
                             if 
                                 uml:read(Process, i) == uml:read(Process, doorLength) ->
-                                    {true, fun(_State) ->
-                                                uml:signal(DB, switchOff)
+                                    {true, fun(State) ->
+                                                uml:signal(DB, switchOff),
+					       State
                                            end};
                                 true ->
                                     false
@@ -102,6 +104,9 @@ state(enabledDoor_entry) ->
                         {true, 
                          fun (Process) ->
                             Counter = uml:read(Process, i),
+			     lists:foreach
+			       (fun (Door) -> uml:signal(Door,enable) end,
+				Doors),
                             uml:signal(Doors, enable), % XXX This must be sent to doors[i] ¿?
                             uml:assign(Process, i, Counter + 1)
                          end}
