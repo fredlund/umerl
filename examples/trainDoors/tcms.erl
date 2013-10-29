@@ -4,8 +4,8 @@
 -include("../../src/umerl.hrl").
 -compile(export_all).
 
-init({Doors, TR, DB}) ->
-    {idle, {Doors, TR, DB}}.
+init(InitialState) ->
+    {idle, InitialState}.
 
 state(movingTrain) ->
     #uml_state
@@ -19,11 +19,11 @@ state(movingTrain) ->
                  guard       =
                     fun (stopTrain, Process, {Doors, TR, DB}) ->
                         {true,
-                         fun (Process, {Doors, TR, DB}) -> 
+                         fun ({Doors, TR, DB}) -> 
                             uml:signal(TR, disable),
-			    			{Doors, TR, DB}
+			     {Doors, TR, DB}
                          end 
-						 };
+			};
                         (_, _, _) -> false
                     end}
             ]
@@ -40,9 +40,7 @@ state(stoppingTrain) ->
                  next_state  =   idle,
                  guard       =
                     fun (trainStopped, Process, {Doors, TR, DB}) ->
-                        {true,
-                         fun (X) -> X end 
-						 };
+                        {true,fun (X) -> X end};
                         (_, _, _) -> false
                     end}
             ]
@@ -60,11 +58,11 @@ state(idle) ->
                  guard       =
                     fun (enableDoors, Process, {Doors, TR, DB}) ->
                         {true,
-                         fun (Process, {Doors, TR}) -> 
-                            uml:assign(Process, i, 0),
-			    			{Doors, TR, DB}
+                         fun ({Doors, TR, DB}) -> 
+			     uml:assign(Process, i, 0),
+			     {Doors, TR, DB}
                          end 
-						 };
+			};
                         (_, _, _) -> false
                     end}
              ]
@@ -82,14 +80,12 @@ state(enablingDoors) ->
                  guard       =
                         fun(Process, {Doors, TR, DB}) ->
                             case uml:read(Process, i) < uml:read(Process, doorLength) of
-			      				true ->
-                                    {true, fun(X) ->
-                                                X
-                                           end};
-                                false ->
-                                    false
+			      true ->
+				{true, fun(X) -> X end};
+			      false ->
+				false
                             end
-						 end
+			end
                 },
                 #transition
                 {type        =   'read',
@@ -97,18 +93,23 @@ state(enablingDoors) ->
                  guard       =
                         fun(Process, {Doors, TR, DB}) ->
                             case uml:read(Process, i) == uml:read(Process, doorLength) of
-                            	true ->
-                            		{true, fun(State) ->
-                                                uml:signal(DB, switchOff),
-					      						State
-                                           end};
-                                false ->
-                                    false
+			      true ->
+				{true, fun(State) ->
+					   uml:signal(DB, switchOff),
+					   State
+				       end};
+			      false ->
+				false
                             end
-						 end
+			end
                 }
 
-            ]
+            ],
+     entry =
+       fun (Process,State) -> 
+	   uml:assign(Process,i,1),
+	   State
+       end
     };
 
 state(enabledDoor_entry) ->
@@ -123,10 +124,10 @@ state(enabledDoor_entry) ->
                  guard       =
                     fun (Process, Doors) ->
                         {true, 
-                         fun (Process, {Doors, TR, DB}) ->
+                         fun ({Doors, TR, DB}) ->
                             Counter = uml:read(Process, i),
-			     			Door = lists:nth(i, Doors),
-			     			uml:signal(Door, enable),
+			     Door = lists:nth(Counter, Doors),
+			     uml:signal(Door, enable),
                             uml:assign(Process, i, Counter + 1),
                             {Doors, TR, DB}
                          end}
@@ -165,9 +166,9 @@ state(doorsEnabled) ->
                 {type        =   'receive',
                  next_state  =   disablingDoors,
                  guard       =
-                    fun (disableDoors, _Process, {Doors, TR, DB}) ->
+                    fun (disableDoors, Process, {Doors, TR, DB}) ->
                         {true,
-                         fun (Process, State) -> 
+                         fun (State) -> 
                             uml:assign(Process, i, 0),
                             State
                          end}; 
@@ -188,29 +189,25 @@ state(disablingDoors) ->
                  guard       =
                         fun(Process, {Doors, TR, DB}) ->
                             case uml:read(Process, i) < uml:read(Process, doorLength) of
-                            	true ->
-                                    {true, fun(X) ->
-                                                X
-                                           end};
-                                false ->
-                                    false
+			      true ->
+				{true, fun(X) -> X end};
+			      false ->
+				false
                             end
-						 end
+			end
                 },
                 #transition
                 {type        =   'read',
                  next_state  =   doorsDisabled,
                  guard       =
-                        fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) == uml:read(Process, doorLength) of
-                            	true ->
-                                    {true, fun(X) ->
-                                                X
-                                           end};
-                                false ->
-                                    false
-                            end
-						 end
+		   fun(Process, {Doors, TR, DB}) ->
+		       case uml:read(Process, i) == uml:read(Process, doorLength) of
+			 true ->
+			   {true, fun(X) -> X end};
+			 false ->
+			   false
+		       end
+		   end
                 }
 
             ]
@@ -229,10 +226,10 @@ state(disabledDoor_entry) ->
                  guard       =
                     fun (Process, {Doors, TR, DB}) ->
                         {true, 
-                         fun (Process, State) ->
+                         fun (State) ->
                             Counter = uml:read(Process, i),
-                            Door = lists:nth(i, Doors),
-			     			uml:signal(Door, disable),
+                            Door = lists:nth(Counter, Doors),
+			     uml:signal(Door, disable),
                             uml:assign(Process, i, Counter + 1),
                             State
                          end}

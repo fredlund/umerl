@@ -20,8 +20,8 @@ state(notPressed) ->
                     fun (press, Process, Door) ->
                         {true,
                          fun (State) ->
-			     		 	uml:assign(Process, ledStatus, true),
-			     			State
+			     uml:assign(Process, ledStatus, true),
+			     State
                          end};
                         (_, _, _) -> false
                     end}
@@ -38,13 +38,12 @@ state(pressed_entry) ->
                 {type        =   'read',
                  next_state  =   pressed,
                  guard       =
-                    fun (_M, _Process, Door) ->
+                    fun (_Process, Door) ->
                         {true,
                          fun (State) ->
-			                uml:signal(Door, buttonPressed),
-			                State
-                         end};
-                        (_, _, _) -> false
+			     uml:signal(Door, buttonPressed),
+			     State
+                         end}
                     end}
             ]
     };

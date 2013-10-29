@@ -14,7 +14,7 @@
 	  doer=void :: 'void' | pid()
 	}).
 
-%%-define(debug,true).
+-define(debug,true).
 
 -ifdef(debug).
 -define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
@@ -37,7 +37,7 @@ start(Module,InitArg,Process,Memory) ->
 
 -spec loop(#machine_int{}) -> no_return().
 loop(State) ->
-  ?LOG("~p: loop(~p)~n",[self(),State]),
+  ?LOG("~p: loop(~p)~n",[symbolic_name(self(),State#machine_int.process),State]),
   UMLPreState =
     (State#machine_int.module):state(State#machine_int.uml_state_name),
   if
@@ -54,7 +54,9 @@ loop(State) ->
       UMLPreState#uml_state.type}},
   receive
     ok ->
-      ?LOG("~p received ok",[self()]),
+      ?LOG
+	 ("~p received ok",
+	  [symbolic_name(self(),State#machine_int.process)]),
       (State#machine_int.process)!
 	{transitions,
 	 {self(),
@@ -63,14 +65,17 @@ loop(State) ->
 	  State#machine_int.doer}},
       receive
 	Msg={state,NewUMLStateName,NewDataState} ->
-	  ?LOG("~p received ~p",[self(),Msg]),
+	  ?LOG
+	     ("~p received ~p",
+	      [symbolic_name(self(),State#machine_int.process),Msg]),
 	  UMLState = (State#machine_int.module):state(NewUMLStateName),
 	  if
 	    UMLState#uml_state.do=/=void ->
 	      Process =
-		{outside_process,self(),
-		 State#machine_int.process,
-		 State#machine_int.memory},
+		{outside_process,
+		 {self(),
+		  State#machine_int.process,
+		  State#machine_int.memory}},
 	      DoProcess =
 		spawn
 		  (fun () ->
@@ -87,10 +92,26 @@ loop(State) ->
 		    data_state=NewDataState})
 	  end;
 	Other ->
-	  ?LOG("~p received ~p~n",[self(),Other]),
+	  ?LOG
+	     ("~p received ~p~n",
+	      [symbolic_name(self(),State#machine_int.process),Other]),
 	  loop(State)
       end;
     Other ->
-      ?LOG("~p received ~p~n",[self(),Other]),
+      ?LOG
+	 ("~p received ~p~n",
+	  [symbolic_name(self(),State#machine_int.process),Other]),
       loop(State)
+  end.
+
+symbolic_name(Pid,ProcPid) when is_atom(ProcPid) ->
+  {m,ProcPid};
+symbolic_name(Pid,ProcPid) when is_pid(Pid),is_pid(ProcPid) ->
+  case process_info(ProcPid,registered_name) of
+    {registered_name,Name} -> {m,Name};
+    _ ->
+      case process_info(Pid,registered_name) of
+	{registered_name,Name} -> Name;
+	_ -> Pid
+      end
   end.

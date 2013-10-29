@@ -1,6 +1,8 @@
 -module(uml).
 
--export([signal/2,assign/3,read/2,call/2,return/2]).
+-export([signal/2,assign/3,read/2,call/2,return/2,self/1]).
+
+-include("records.hrl").
 
 %%-define(debug,true).
 
@@ -10,12 +12,12 @@
 -define(LOG(X,Y), ok).
 -endif.
 
--spec signal(pid(),any()) -> any().
+-spec signal(pid()|atom(),any()) -> any().
 signal(To,Msg) ->
   ?LOG("signal ~p to ~p~n",[Msg,To]),
   To!{message,Msg}.
 
--spec call(pid(),any()) -> any().
+-spec call(pid()|atom(),any()) -> any().
 call(To,Msg) ->
   To!{message,{call,Msg,self()}},
   receive
@@ -23,27 +25,40 @@ call(To,Msg) ->
       Result
   end.
 
--spec return(pid(),any()) -> any().
+-spec return(pid()|atom(),any()) -> any().
 return(To,Msg) ->
   To!{return,Msg},
   Msg.
 
--spec assign(any(),atom(),any()) -> any().
-assign({in_process,Table},Var,Value) ->
+-spec assign(context(),atom(),any()) -> any().
+assign({in_process,{Table,_Process}},Var,Value) ->
   ets:insert(Table,{Var,Value}),
   put(var_write,true),
   Value;
-assign({outside_process,MachinePid,Process,Table},Var,Value) ->
+assign({outside_process,{MachinePid,Process,Table}},Var,Value) ->
   Process!{write,MachinePid,Var,Value},
   Value.
 
--spec read(any(),atom()) -> any().
-read({in_process,Table},Var) ->
+-spec read(context(),atom()) -> any().
+read({in_process,{Table,_Process}},Var) ->
   [{_,Value}] = ets:lookup(Table,Var),
   Value;
-read({outside_process,MachinePid,Process,Table},Var) ->
+read({outside_process,{MachinePid,Process,Table}},Var) ->
   [{_,Value}] = ets:lookup(Table,Var),
   Value.
 
+-spec self(context()) -> pid()|atom().
+self({in_process,{_Table,Process}}) ->
+  symbolic_name(Process);
+self({outside_process,{_MachinePid,Process,_Table}}) ->
+  symbolic_name(Process).
+
+symbolic_name(Pid) when is_pid(Pid) ->
+  case process_info(Pid,registered_name) of
+    {registered_name,Name} -> Name;
+    _ -> Pid
+  end;
+symbolic_name(Other) ->
+  Other.
 
 

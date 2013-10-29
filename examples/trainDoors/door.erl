@@ -18,10 +18,10 @@ state(closedAndDisabled_entry) ->
                 {type        =   'read',
                  next_state  =   closedAndDisabled,
                  guard       =
-                    fun (_Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true, 
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
-                            uml:signal(T, {notify, self, 'closed'}),
+                            uml:signal(T, {notify, uml:self(Process), 'closed'}),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end}
                     end}
@@ -41,7 +41,7 @@ state(closedAndDisabled) ->
                  guard       =
                     fun (enable, Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true,
-                         fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                         fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
                             uml:assign(Process, status, 'enabled'),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end};
@@ -55,9 +55,7 @@ state(closedAndDisabled) ->
                  guard       =
                     fun (disable, Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true,
-                         fun (X) ->
-                            X
-                         end};
+                         fun (X) -> X end};
                         (_, _, _) -> false
                     end
                 }
@@ -74,10 +72,10 @@ state(enabled_entry) ->
                 {type        =   'read',
                  next_state  =   enabled,
                  guard       =
-                    fun (_Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true, 
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
-                            uml:signal(T, {notify, self, 'enabled'}),
+                            uml:signal(T, {notify, uml:self(Process), 'enabled'}),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end}
                     end}
@@ -97,7 +95,7 @@ state(enabled) ->
                  guard       =
                     fun (buttonPressed, Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true,
-                         fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                         fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
                             uml:assign(Process, status, 'opening'),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end};
@@ -116,10 +114,10 @@ state(opening_entry) ->
                 {type        =   'read',
                  next_state  =   opening,
                  guard       =
-                    fun (_Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true, 
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
-                            uml:signal(T, {notify, self, 'opening'}),
+                            uml:signal(T, {notify, uml:self(Process), 'opening'}),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end}
                     end}
@@ -137,10 +135,7 @@ state(opening) ->
                  next_state  =   wait4opening,
                  guard       =
                     fun (_Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
-                        {true,
-                         fun (X) ->
-                            X
-                         end}
+                        {true,fun (X) -> X end}
                     end}
             ]
      };
@@ -181,10 +176,10 @@ state(opened_entry) ->
                 {type        =   'read',
                  next_state  =   opened,
                  guard       =
-                    fun (_Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true, 
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
-                            uml:signal(T, {notify, self, 'opened'}),
+                            uml:signal(T, {notify, uml:self(Process), 'opened'}),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end}
                     end}
@@ -223,10 +218,10 @@ state(closing_entry) ->
                 {type        =   'read',
                  next_state  =   closing,
                  guard       =
-                    fun (_Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true, 
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
-                            uml:signal(T, {notify, self, 'closing'}),
+                            uml:signal(T, {notify, uml:self(Process), 'closing'}),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end}
                     end}

@@ -19,7 +19,7 @@ state(notPressed) ->
                  guard       =
                     fun (press, Process, TCMS) ->
                         {true,
-                         fun (Process, TCMS) ->
+                         fun (TCMS) ->
                             uml:assign(Process, ledStatus, true),
                             TCMS
                          end};
@@ -38,13 +38,12 @@ state(pressed_entry) ->
                 {type        =   'read',
                  next_state  =   pressed,
                  guard       =
-                    fun (_M, _Process, TCMS) ->
+                    fun (Process, TCMS) ->
                         {true,
                          fun (TCMS) ->
                             uml:signal(TCMS, enableDoors), % Send signal
                             TCMS
-                         end};
-                        (_, _, _) -> false
+                         end}
                     end}
             ]
     };
@@ -62,7 +61,7 @@ state(pressed) ->
                  guard       =
                     fun (switchOff, Process, TCMS) ->
                         {true,
-                         fun (Process, TCMS) ->
+                         fun (TCMS) ->
                             uml:assign(Process, ledStatus, false),
                             TCMS
                          end};

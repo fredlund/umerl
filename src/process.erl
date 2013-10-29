@@ -20,7 +20,7 @@
 	  memory
 	}).
 
-%%-define(debug,true).
+-define(debug,true).
 
 -ifdef(debug).
 -define(LOG(X,Y), io:format("{~p,~p}: ~s~n", [?MODULE,?LINE,io_lib:format(X,Y)])).
@@ -32,10 +32,10 @@
 start(MachineSpecs) ->
   start(MachineSpecs,fun (_) -> ok end).
 
--spec start([{atom(),any()}],fun((any())->any())) -> any().
+-spec start([{atom(),any()}],fun((context())->any())) -> any().
 start(MachineSpecs,InitVars) ->
   Memory = ets:new(private,[public]),
-  InitVars({in_process,Memory}),
+  InitVars({in_process,{Memory,self()}}),
   Self = self(),
   Machines =
     lists:foldl
@@ -62,15 +62,15 @@ start(MachineSpecs,InitVars) ->
 
 -spec loop(#process{}) -> no_return().
 loop(PermissionsState) ->
-  ?LOG("~p: loop(~p)~n",[self(),PermissionsState]),
+  ?LOG("~p: loop(~p)~n",[symbolic_name(self()),PermissionsState]),
   State = check_permissions(PermissionsState),
   receive
     RawMsg -> 
-      ?LOG("~p: message ~p received~n",[self(),RawMsg]),
+      ?LOG("~p: message ~p received~n",[symbolic_name(self()),RawMsg]),
       case RawMsg of
 
 	{message,Msg} ->
-	  ?LOG("got a message ~p~n",[Msg]),
+	  ?LOG("~p: got a message ~p~n",[symbolic_name(self()),Msg]),
 	  loop
 	    (State#process
 	     {machines=
@@ -111,15 +111,31 @@ loop(PermissionsState) ->
 	    lists:foldl
 	      (fun (ReadTransition,Enabled) ->
 		   Guard = ReadTransition#transition.guard,
-		   case check_guard(Guard, data, DataState, State) of
+		   try check_guard(Guard, data, DataState, State) of
 		     {true,GuardAction} ->
 		       [{GuardAction,ReadTransition,Machine}|Enabled];
 		     false ->
 		       Enabled
+		   catch Class:Reason ->
+		       Stacktrace = erlang:get_stacktrace(),
+		       io:format
+			 ("~n*** Error: ~p: evaluation of data guard ~p~nin"
+			  ++" machine state ~p with process state~n  ~p"
+			  ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
+			  ++"~nStacktrace:~n~p~n~n",
+			  [symbolic_name(self()),
+			   Guard,
+			   StateName,
+			   State,
+			   DataState,
+			   Class,
+			   Reason,
+			   Stacktrace]),
+		       erlang:raise(Class,Reason,Stacktrace)
 		   end
 	       end, [], ReadTransitions),
 	  EnabledReceives =
-	    find_enabled_receives(ReceiveTransitions,DataState,Machine,State),
+	    find_enabled_receives(ReceiveTransitions,DataState,Machine,State,StateName),
 	  case pickTransition(EnabledReads++EnabledReceives) of
 	    {ok,{GuardAction,ChosenTransition,NewMachine}} ->
 	      ?LOG("transition choosen is~n~p~n",[ChosenTransition]),
@@ -168,7 +184,7 @@ loop(PermissionsState) ->
 	{write,MachinePid,Var,Value} ->
 	  ?LOG
 	    ("~p: machine ~p wrote ~p to variable ~p~n",
-	     [self(),MachinePid,Value,Var]),
+	     [symbolic_name(self()),symbolic_name(MachinePid),Value,Var]),
 	  ets:insert(State#process.memory,{Var,Value}),
 	  loop
 	    (State#process
@@ -183,7 +199,7 @@ loop(PermissionsState) ->
 	_ ->
 	  io:format
 	    ("*** ~p: warning: received strange message~n~p~n",
-	     [self(),RawMsg]),
+	     [symbolic_name(self()),RawMsg]),
 	  loop(State)
       end
   end.
@@ -199,7 +215,7 @@ check_permissions(State) ->
 		 true ->
 		   ?LOG
 		      ("~p: giving permission to ~p~n",
-		       [self(),Machine#machine.pid]),
+		       [symbolic_name(self()),symbolic_name(Machine#machine.pid)]),
 		   Machine#machine.pid!ok,
 		   {MachinePid,Machine#machine{wants_permission=void}};
 		 false ->
@@ -244,15 +260,15 @@ classify_transitions(Transitions) ->
 	 end
      end, {[],[]}, Transitions).
 
-find_enabled_receives([],_DataState,_Machine,_State) -> [];
-find_enabled_receives(Transitions,DataState,Machine,State) -> 
-  try_receive_msgs(Machine#machine.mailbox,[],Transitions,DataState,Machine,State).
+find_enabled_receives([],_DataState,_Machine,_State,_StateName) -> [];
+find_enabled_receives(Transitions,DataState,Machine,State,StateName) -> 
+  try_receive_msgs(Machine#machine.mailbox,[],Transitions,DataState,Machine,State,StateName).
 
-try_receive_msgs([],_Seen,_Transitions,_DataState,_Machine,_State) ->  [];
-try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State) -> 
-  case try_receive_msg(Msg,Transitions,DataState,State) of
+try_receive_msgs([],_Seen,_Transitions,_DataState,_Machine,_State,_StateName) ->  [];
+try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State,StateName) -> 
+  case try_receive_msg(Msg,Transitions,DataState,State,StateName) of
     [] ->
-      try_receive_msgs(Rest,[Msg|Seen],Transitions,DataState,Machine,State);
+      try_receive_msgs(Rest,[Msg|Seen],Transitions,DataState,Machine,State,StateName);
     Results ->
       NewMailbox = lists:reverse(Seen,Rest),
       NewMachine = Machine#machine{mailbox=NewMailbox},
@@ -261,27 +277,45 @@ try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State) ->
 	 Results)
   end.
 
-try_receive_msg(Msg,Transitions,DataState,State) ->
+try_receive_msg(Msg,Transitions,DataState,State,StateName) ->
   lists:foldl
     (fun (Transition,Collected) ->
 	 Guard = Transition#transition.guard,
-	 case check_guard(Guard,{msg,Msg}, DataState, State) of
+	 try check_guard(Guard,{msg,Msg}, DataState, State) of
 	   false -> Collected;
 	   {true,GuardAction} ->
 	     ?LOG
-		("message ~p is receivable by~n~p~nin state~n~p~n",
-		 [Msg,Transition,DataState]),
+		("~p: message ~p is receivable by~n~p~nin state~n~p~n",
+		 [symbolic_name(self()),Msg,Transition,DataState]),
 	     [{GuardAction,Transition}|Collected]
+	 catch Class:Reason ->
+	     Stacktrace = erlang:get_stacktrace(),
+	     io:format
+	       ("~n*** Error: ~p: evaluation of data guard ~p~n"
+		++" on message ~p~nin"
+		++" machine state ~p with process state~n  ~p"
+		++"~nwith data~n  ~p~nraises exception ~p:~p~n"
+		++"~nStacktrace:~n~p~n~n",
+		[symbolic_name(self()),
+		 Guard,
+		 Msg,
+		 StateName,
+		 State,
+		 DataState,
+		 Class,
+		 Reason,
+		 Stacktrace]),
+	     erlang:raise(Class,Reason,Stacktrace)
 	 end
      end, [], Transitions).
 
 check_guard(Guard, {msg,Msg}, DataState, State) ->
-  Guard(Msg, {in_process,State#process.memory}, DataState);
+  Guard(Msg, {in_process,{State#process.memory,self()}}, DataState);
 check_guard(Guard, _, DataState, State) ->
-  Guard({in_process,State#process.memory}, DataState).
+  Guard({in_process,{State#process.memory,self()}}, DataState).
 
 run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
-  ?LOG("running guard action~n",[]),
+  ?LOG("~p: running guard action~n",[symbolic_name(self())]),
   Mailbox = Machine#machine.mailbox,
   NewMailbox =
     if
@@ -294,13 +328,49 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
 	  true ->
 	    lists:filter
 	      (fun (Msg) -> 
-		   Defer(Msg,DataState,{in_process,State#process.memory})
+		   try Defer(Msg,DataState,{in_process,{State#process.memory,self()}})
+		   catch Class:Reason ->
+		       Stacktrace = erlang:get_stacktrace(),
+		       io:format
+			 ("~n*** Error: ~p: evaluation of defer function ~p~nin"
+			  ++" transition from machine state ~p to machine state ~p with process state~n  ~p"
+			  ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
+			  ++"~nStacktrace:~n~p~n~n",
+			  [symbolic_name(self()),
+			   GuardAction,
+			   FromState,
+			   ToState,
+			   State,
+			   DataState,
+			   Class,
+			   Reason,
+			   Stacktrace]),
+		       erlang:raise(Class,Reason,Stacktrace)
+		   end
 	       end, Mailbox)
 	end;
       true -> Mailbox
   end,
-  NewDataState = GuardAction(DataState),
-  {NewDataState,NewMailbox}.
+    try GuardAction(DataState) of
+	NewDataState -> {NewDataState,NewMailbox}
+    catch Class:Reason ->
+	Stacktrace = erlang:get_stacktrace(),
+	io:format
+	  ("~n*** Error: ~p: evaluation of guard action ~p~nin"
+	   ++" transition from machine state ~p to machine state ~p with process state~n  ~p"
+	   ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
+	   ++"~nStacktrace:~n~p~n~n",
+	   [symbolic_name(self()),
+	    GuardAction,
+	    FromState,
+	    ToState,
+	    State,
+	    DataState,
+	    Class,
+	    Reason,
+	    Stacktrace]),
+	erlang:raise(Class,Reason,Stacktrace)
+    end.
 
 pickTransition(Transitions=[_|_]) ->
   Length = length(Transitions),
@@ -323,6 +393,11 @@ get_machine(MachinePid,State) ->
 add_machine(Machine,Machines) ->  
   [{Machine#machine.pid,Machine}|Machines].
 
+symbolic_name(Pid) when is_pid(Pid) ->
+  case process_info(Pid,registered_name) of
+    {registered_name,Name} -> Name;
+    _ -> Pid
+  end.
 
 
 

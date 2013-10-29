@@ -1,17 +1,20 @@
+-type context() :: {in_process,{any(),pid()|atom()}}
+		 | {outside_process,{any()|pid(),pid()|atom(),any()}}.
+
 -type actionfun() ::
 	fun((any()) -> any()).
 
 -type statefun() ::
-	fun((any(),any()) -> any()).
+	fun((context(),any()) -> any()).
 
 -type deferfun() ::
-	fun((any(),any(),any()) -> boolean()).
+	fun((any(),any(),context()) -> boolean()).
 
 -type rcv_triggerfun() ::
-	fun((any(),any(),any()) -> {true,actionfun()} | false).
+	fun((any(),context(),any()) -> {true,actionfun()} | false).
 
 -type data_triggerfun() ::
-	fun((any(),any()) -> {true,actionfun()} | false).
+	fun((context(),any()) -> {true,actionfun()} | false).
 
 -type triggerfun() :: rcv_triggerfun() | data_triggerfun().
 

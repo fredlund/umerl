@@ -18,10 +18,14 @@ start(NDoors) ->
      spawn_link(fun () -> timer:sleep(100), process:start([{traction,void}]) end)),
   register
     (TCMS,
-     spawn_link(fun () -> timer:sleep(100), process:start([{tcms,{Doors,Traction,DriverButton}}]) end)).
+     spawn_link(fun () -> timer:sleep(100), process:start([{tcms,{Doors,Traction,DriverButton}}],fun (Process) -> uml:assign(Process,doorLength,length(Doors)) end) end)),
+  
+  %% we fake a doorbutton press
+  uml:signal(list_to_atom("doorButton_2"),press),
+  uml:signal(list_to_atom("driverButton"),press).
 
 create_doors(N,TCMS) ->
-  lists:foreach
+  lists:map
     (fun (N) ->
 	 NS = integer_to_list(N),
 	 Door = list_to_atom("door_"++NS),
@@ -37,7 +41,7 @@ create_doors(N,TCMS) ->
 	 register
 	   (ObstacleSensor,
 	    spawn_link(fun () -> timer:sleep(100), process:start([{obstacleSensor,Door}]) end)),
-	 DoorButton = list_to_atom("dootButton_"++NS),
+	 DoorButton = list_to_atom("doorButton_"++NS),
 	 register
 	   (DoorButton,
 	    spawn_link(fun () -> timer:sleep(100), process:start([{doorButton,Door}]) end)),
@@ -46,7 +50,8 @@ create_doors(N,TCMS) ->
 	    spawn_link
 	      (fun () ->
 		   timer:sleep(100), process:start([{door,{TCMS, OpenSensor, CloseSensor, ObstacleSensor}}])
-	       end))
+	       end)),
+	 Door
      end, lists:seq(1,N)).
 
 
