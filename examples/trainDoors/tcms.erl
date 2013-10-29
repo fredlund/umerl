@@ -59,7 +59,7 @@ state(idle) ->
                     fun (enableDoors, Process, {Doors, TR, DB}) ->
                         {true,
                          fun ({Doors, TR, DB}) -> 
-			     uml:assign(Process, i, 0),
+			     uml:assign(Process, i, 1),
 			     {Doors, TR, DB}
                          end 
 			};
@@ -79,7 +79,7 @@ state(enablingDoors) ->
                  next_state  =   enabledDoor_entry,
                  guard       =
                         fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) < uml:read(Process, doorLength) of
+                            case uml:read(Process, i) =< uml:read(Process, doorLength) of
 			      true ->
 				{true, fun(X) -> X end};
 			      false ->
@@ -92,7 +92,7 @@ state(enablingDoors) ->
                  next_state  =   doorsEnabled,
                  guard       =
                         fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) == uml:read(Process, doorLength) of
+                            case uml:read(Process, i) > uml:read(Process, doorLength) of
 			      true ->
 				{true, fun(State) ->
 					   uml:signal(DB, switchOff),
@@ -104,12 +104,7 @@ state(enablingDoors) ->
 			end
                 }
 
-            ],
-     entry =
-       fun (Process,State) -> 
-	   uml:assign(Process,i,1),
-	   State
-       end
+            ]
     };
 
 state(enabledDoor_entry) ->
@@ -169,7 +164,7 @@ state(doorsEnabled) ->
                     fun (disableDoors, Process, {Doors, TR, DB}) ->
                         {true,
                          fun (State) -> 
-                            uml:assign(Process, i, 0),
+                            uml:assign(Process, i, 1),
                             State
                          end}; 
                          (_, _, _) -> false
@@ -188,7 +183,7 @@ state(disablingDoors) ->
                  next_state  =   disabledDoor_entry,
                  guard       =
                         fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) < uml:read(Process, doorLength) of
+                            case uml:read(Process, i) =< uml:read(Process, doorLength) of
 			      true ->
 				{true, fun(X) -> X end};
 			      false ->
