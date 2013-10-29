@@ -119,12 +119,15 @@ loop(PermissionsState) ->
 		   catch Class:Reason ->
 		       Stacktrace = erlang:get_stacktrace(),
 		       io:format
-			 ("~n*** Error: ~p: evaluation of data guard ~p~nin"
+			 ("~n*** Error: ~p: evaluation of data guard ~p~n"
+			  ++"for machine ~p (~p) in"
 			  ++" machine state ~p with process state~n  ~p"
 			  ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
 			  ++"~nStacktrace:~n~p~n~n",
 			  [symbolic_name(self()),
 			   Guard,
+			   Machine#machine.module,
+			   Machine#machine.pid,
 			   StateName,
 			   State,
 			   DataState,
@@ -135,7 +138,7 @@ loop(PermissionsState) ->
 		   end
 	       end, [], ReadTransitions),
 	  EnabledReceives =
-	    find_enabled_receives(ReceiveTransitions,DataState,Machine,State,StateName),
+	    find_enabled_receives(ReceiveTransitions,DataState,Machine,State,StateName,Machine),
 	  case pickTransition(EnabledReads++EnabledReceives) of
 	    {ok,{GuardAction,ChosenTransition,NewMachine}} ->
 	      ?LOG("transition choosen is~n~p~n",[ChosenTransition]),
@@ -260,15 +263,15 @@ classify_transitions(Transitions) ->
 	 end
      end, {[],[]}, Transitions).
 
-find_enabled_receives([],_DataState,_Machine,_State,_StateName) -> [];
-find_enabled_receives(Transitions,DataState,Machine,State,StateName) -> 
-  try_receive_msgs(Machine#machine.mailbox,[],Transitions,DataState,Machine,State,StateName).
+find_enabled_receives([],_DataState,_Machine,_State,_StateName,_Machine) -> [];
+find_enabled_receives(Transitions,DataState,Machine,State,StateName,Machine) -> 
+  try_receive_msgs(Machine#machine.mailbox,[],Transitions,DataState,Machine,State,StateName,Machine).
 
-try_receive_msgs([],_Seen,_Transitions,_DataState,_Machine,_State,_StateName) ->  [];
-try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State,StateName) -> 
-  case try_receive_msg(Msg,Transitions,DataState,State,StateName) of
+try_receive_msgs([],_Seen,_Transitions,_DataState,_Machine,_State,_StateName,_Machine) ->  [];
+try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State,StateName,Machine) -> 
+  case try_receive_msg(Msg,Transitions,DataState,State,StateName,Machine) of
     [] ->
-      try_receive_msgs(Rest,[Msg|Seen],Transitions,DataState,Machine,State,StateName);
+      try_receive_msgs(Rest,[Msg|Seen],Transitions,DataState,Machine,State,StateName,Machine);
     Results ->
       NewMailbox = lists:reverse(Seen,Rest),
       NewMachine = Machine#machine{mailbox=NewMailbox},
@@ -277,7 +280,7 @@ try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State,StateName) 
 	 Results)
   end.
 
-try_receive_msg(Msg,Transitions,DataState,State,StateName) ->
+try_receive_msg(Msg,Transitions,DataState,State,StateName,Machine) ->
   lists:foldl
     (fun (Transition,Collected) ->
 	 Guard = Transition#transition.guard,
@@ -292,13 +295,16 @@ try_receive_msg(Msg,Transitions,DataState,State,StateName) ->
 	     Stacktrace = erlang:get_stacktrace(),
 	     io:format
 	       ("~n*** Error: ~p: evaluation of data guard ~p~n"
-		++" on message ~p~nin"
+		++" on message ~p~n"
+		++"for machine ~p (~p) in"
 		++" machine state ~p with process state~n  ~p"
 		++"~nwith data~n  ~p~nraises exception ~p:~p~n"
 		++"~nStacktrace:~n~p~n~n",
 		[symbolic_name(self()),
 		 Guard,
 		 Msg,
+		 Machine#machine.module,
+		 Machine#machine.pid,
 		 StateName,
 		 State,
 		 DataState,
@@ -332,12 +338,15 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
 		   catch Class:Reason ->
 		       Stacktrace = erlang:get_stacktrace(),
 		       io:format
-			 ("~n*** Error: ~p: evaluation of defer function ~p~nin"
+			 ("~n*** Error: ~p: evaluation of defer function ~p~n"
+			  ++"for machine ~p (~p) in"
 			  ++" transition from machine state ~p to machine state ~p with process state~n  ~p"
 			  ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
 			  ++"~nStacktrace:~n~p~n~n",
 			  [symbolic_name(self()),
 			   GuardAction,
+			   Machine#machine.module,
+			   Machine#machine.pid,
 			   FromState,
 			   ToState,
 			   State,
@@ -356,12 +365,15 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
     catch Class:Reason ->
 	Stacktrace = erlang:get_stacktrace(),
 	io:format
-	  ("~n*** Error: ~p: evaluation of guard action ~p~nin"
+	  ("~n*** Error: ~p: evaluation of guard action ~p~n"
+	   ++"for machine ~p (~p) in"
 	   ++" transition from machine state ~p to machine state ~p with process state~n  ~p"
 	   ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
 	   ++"~nStacktrace:~n~p~n~n",
 	   [symbolic_name(self()),
 	    GuardAction,
+	    Machine#machine.module,
+	    Machine#machine.pid,
 	    FromState,
 	    ToState,
 	    State,
