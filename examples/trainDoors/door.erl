@@ -3,7 +3,7 @@
 -include("../../src/records.hrl").
 -include("../../src/umerl.hrl").
 
--compile(export_all).
+-export([init/1,state/1]).
 
 init({T, OpenSensor, CloseSensor, ObsSensor}) ->
     {closedAndDisabled_entry, {T, OpenSensor, CloseSensor, ObsSensor}}.
@@ -160,9 +160,8 @@ state(wait4opening) ->
                     end}
             ],
          do = 
-            fun(_Process, State) ->
-                io:format("Opening door...~n"),
-                State
+            fun(_Process) ->
+                io:format("Opening door...~n")
             end
     };
 
@@ -280,9 +279,8 @@ state(wait4closing) ->
 
             ],
          do = 
-            fun(_Process, State) ->
-                io:format("Closing door...~n"),
-                State
+            fun(_Process) ->
+                io:format("Closing door...~n")
             end
     }.
 

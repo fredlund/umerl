@@ -2,7 +2,7 @@
 -module(driverButton).
 -include("../../src/records.hrl").
 -include("../../src/umerl.hrl").
--compile(export_all).
+-export([init/1,state/1]).
 
 init(TCMS) ->
     {notPressed, TCMS}.

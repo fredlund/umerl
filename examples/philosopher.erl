@@ -95,7 +95,7 @@ state(eating) ->
 	   end}
        ],
     do=
-       fun (_Process,_State) ->
+       fun (_Process) ->
 	   io:format("~p: eating spaghetti...~n",[self()])
        end,
      exit=

@@ -79,7 +79,25 @@ loop(State) ->
 	      DoProcess =
 		spawn
 		  (fun () ->
-		       (UMLState#uml_state.do)(Process,NewDataState)
+		       try ((UMLState#uml_state.do)(Process))
+		       catch Class:Reason ->
+			   Stacktrace = erlang:get_stacktrace(),
+			   io:format
+			     ("~n*** Error: ~p: evaluation of do action ~p~n"
+			      ++"for machine ~p in"
+			      ++" machine state ~p~n"
+			      ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
+			      ++"~nStacktrace:~n~p~n~n",
+			      [self(),
+			       UMLState#uml_state.do,
+			       State#machine_int.module,
+			       State#machine_int.uml_state_name,
+			       NewDataState,
+			       Class,
+			       Reason,
+			       Stacktrace]),
+			   erlang:raise(Class,Reason,Stacktrace)
+		       end
 		   end),
 	      loop
 		(State#machine_int
@@ -104,7 +122,7 @@ loop(State) ->
       loop(State)
   end.
 
-symbolic_name(Pid,ProcPid) when is_atom(ProcPid) ->
+symbolic_name(_Pid,ProcPid) when is_atom(ProcPid) ->
   {m,ProcPid};
 symbolic_name(Pid,ProcPid) when is_pid(Pid),is_pid(ProcPid) ->
   case process_info(ProcPid,registered_name) of

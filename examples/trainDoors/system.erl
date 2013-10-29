@@ -15,14 +15,26 @@ start(NDoors) ->
   Traction = 'traction',
   register
     (Traction,
-     spawn_link(fun () -> timer:sleep(100), process:start([{traction,void}]) end)),
+     spawn_link
+       (fun () ->
+	    timer:sleep(100),
+	    process:start
+	      ([{traction,void},
+		{speed,void}],
+	      fun (Process) ->
+		  uml:assign(Process,speed,0),
+		  uml:assign(Process,breaking,false),
+		  uml:assign(Process,accelerating,false)
+	      end)
+	end)),
   register
     (TCMS,
      spawn_link(fun () -> timer:sleep(100), process:start([{tcms,{Doors,Traction,DriverButton}}],fun (Process) -> uml:assign(Process,doorLength,length(Doors)) end) end)),
   
   %% we fake a doorbutton press
   uml:signal(list_to_atom("doorButton_2"),press),
-  uml:signal(list_to_atom("driverButton"),press).
+  uml:signal(list_to_atom("driverButton"),press),
+  uml:signal(list_to_atom("tcms"),disableDoors).
 
 create_doors(N,TCMS) ->
   lists:map

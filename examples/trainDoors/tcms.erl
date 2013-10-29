@@ -1,211 +1,210 @@
-% TCMS SM
+						% TCMS SM
 -module(tcms).
 -include("../../src/records.hrl").
 -include("../../src/umerl.hrl").
--compile(export_all).
+-export([init/1,state/1]).
 
 init(InitialState) ->
-    {idle, InitialState}.
+  {idle, InitialState}.
 
 state(movingTrain) ->
-    #uml_state
+  #uml_state
     {name = movingTrain,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   stoppingTrain,
-                 guard       =
-                    fun (stopTrain, Process, {Doors, TR, DB}) ->
-                        {true,
-                         fun ({Doors, TR, DB}) -> 
-                            uml:signal(TR, disable),
-			     {Doors, TR, DB}
-                         end 
-			};
-                        (_, _, _) -> false
-                    end}
-            ]
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   stoppingTrain,
+	 guard       =
+	   fun (stopTrain, Process, {Doors, TR, DB}) ->
+	       {true,
+		fun ({Doors, TR, DB}) -> 
+		    uml:signal(TR, disable),
+		    {Doors, TR, DB}
+		end 
+	       };
+	       (_, _, _) -> false
+	   end}
+       ]
     };
-    
+
 state(stoppingTrain) ->
-    #uml_state
+  #uml_state
     {name = stoppingTrain,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   idle,
-                 guard       =
-                    fun (trainStopped, Process, {Doors, TR, DB}) ->
-                        {true,fun (X) -> X end};
-                        (_, _, _) -> false
-                    end}
-            ]
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   idle,
+	 guard       =
+	   fun (trainStopped, Process, {Doors, TR, DB}) ->
+	       {true,fun (X) -> X end};
+	       (_, _, _) -> false
+	   end}
+       ]
     };
 
 state(idle) ->
-    #uml_state
+  #uml_state
     {name = idle,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   enablingDoors,
-                 guard       =
-                    fun (enableDoors, Process, {Doors, TR, DB}) ->
-                        {true,
-                         fun ({Doors, TR, DB}) -> 
-			     uml:assign(Process, i, 1),
-			     {Doors, TR, DB}
-                         end 
-			};
-                        (_, _, _) -> false
-                    end}
-             ]
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   enablingDoors,
+	 guard       =
+	   fun (enableDoors, Process, {Doors, TR, DB}) ->
+	       {true,
+		fun ({Doors, TR, DB}) -> 
+		    uml:assign(Process, i, 1),
+		    {Doors, TR, DB}
+		end 
+	       };
+	       (_, _, _) -> false
+	   end}
+       ]
     };
 
 state(enablingDoors) ->
-    #uml_state
+  #uml_state
     {name = enablingDoors,
-        type = 'read',
-        transitions=
-            [
-                #transition
-				{type        =   'read',
-                 next_state  =   enabledDoor_entry,
-                 guard       =
-                        fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) =< uml:read(Process, doorLength) of
-			      true ->
-				{true, fun(X) -> X end};
-			      false ->
-				false
-                            end
-			end
-                },
-                #transition
-                {type        =   'read',
-                 next_state  =   doorsEnabled,
-                 guard       =
-                        fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) > uml:read(Process, doorLength) of
-			      true ->
-				{true, fun(State) ->
-					   uml:signal(DB, switchOff),
-					   State
-				       end};
-			      false ->
-				false
-                            end
-			end
-                }
-
-            ]
+     type = 'read',
+     transitions=
+       [
+	#transition
+	{type = 'read',
+	 next_state  =   enabledDoor_entry,
+	 guard       =
+	   fun(Process, {Doors, TR, DB}) ->
+	       case uml:read(Process, i) =< uml:read(Process, doorLength) of
+		 true ->
+		   {true, fun(X) -> X end};
+		 false ->
+		   false
+	       end
+	   end
+	},
+	#transition
+	{type        =   'read',
+	 next_state  =   doorsEnabled,
+	 guard       =
+	   fun(Process, {Doors, TR, DB}) ->
+	       case uml:read(Process, i) > uml:read(Process, doorLength) of
+		 true ->
+		   {true, fun(State) ->
+			      uml:signal(DB, switchOff),
+			      State
+			  end};
+		 false ->
+		   false
+	       end
+	   end
+	}
+	
+       ]
     };
 
 state(enabledDoor_entry) ->
-    #uml_state
+  #uml_state
     {name = enabledDoor_entry,
-        type = 'read',
-        transitions=
-            [
-                #transition
-                {type        =   'read',
-                 next_state  =   enableDoor,
-                 guard       =
-                    fun (Process, Doors) ->
-                        {true, 
-                         fun ({Doors, TR, DB}) ->
-                            Counter = uml:read(Process, i),
-			     Door = lists:nth(Counter, Doors),
-			     uml:signal(Door, enable),
-                            uml:assign(Process, i, Counter + 1),
-                            {Doors, TR, DB}
-                         end}
-                    end}
-            ]
+     type = 'read',
+     transitions=
+       [
+	#transition
+	{type        =   'read',
+	 next_state  =   enableDoor,
+	 guard       =
+	   fun (Process, Doors) ->
+	       {true, 
+		fun ({Doors, TR, DB}) ->
+		    Counter = uml:read(Process, i),
+		    Door = lists:nth(Counter, Doors),
+		    uml:signal(Door, enable),
+		    uml:assign(Process, i, Counter + 1),
+		    {Doors, TR, DB}
+		end}
+	   end}
+       ]
     };
 
 state(enableDoor) ->
-    #uml_state
+  #uml_state
     {name = enableDoor,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   enablingDoors,
-                 guard       =
-                    fun ({notify, D, DS}, _Process, {Doors, TR, DB}) ->
-                        {true,
-                         fun (State) ->
-                            io:format("Processing notification~n"),
-                            State
-                         end};
-                         (_, _, _) -> false
-                    end}
-            ]
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   enablingDoors,
+	 guard       =
+	   fun ({notify, D, DS}, _Process, {Doors, TR, DB}) ->
+	       {true,
+		fun (State) ->
+		    io:format("Processing notification~n"),
+		    State
+		end};
+	       (_, _, _) -> false
+	   end}
+       ]
     };
 
 state(doorsEnabled) ->
-    #uml_state
+  #uml_state
     {name = doorsEnabled,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   disablingDoors,
-                 guard       =
-                    fun (disableDoors, Process, {Doors, TR, DB}) ->
-                        {true,
-                         fun (State) -> 
-                            uml:assign(Process, i, 1),
-                            State
-                         end}; 
-                         (_, _, _) -> false
-                    end}
-            ]
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   disablingDoors,
+	 guard       =
+	   fun (disableDoors, Process, {Doors, TR, DB}) ->
+	       {true,
+		fun (State) -> 
+		    uml:assign(Process, i, 1),
+		    State
+		end}; 
+	       (_, _, _) -> false
+	   end}
+       ]
     };
 
 state(disablingDoors) ->
-    #uml_state
+  #uml_state
     {name = disablingDoors,
-        type = 'read',
-        transitions=
-            [
-                #transition
-				{type        =   'read',
-                 next_state  =   disabledDoor_entry,
-                 guard       =
-                        fun(Process, {Doors, TR, DB}) ->
-                            case uml:read(Process, i) =< uml:read(Process, doorLength) of
-			      true ->
-				{true, fun(X) -> X end};
-			      false ->
-				false
-                            end
-			end
-                },
-                #transition
-                {type        =   'read',
-                 next_state  =   doorsDisabled,
-                 guard       =
-		   fun(Process, {Doors, TR, DB}) ->
-		       case uml:read(Process, i) == uml:read(Process, doorLength) of
-			 true ->
-			   {true, fun(X) -> X end};
-			 false ->
-			   false
-		       end
-		   end
-                }
-
-            ]
+     type = 'read',
+     transitions=
+       [
+	#transition
+	{type        =   'read',
+	 next_state  =   disabledDoor_entry,
+	 guard       =
+	   fun(Process, {Doors, TR, DB}) ->
+	       case uml:read(Process, i) =< uml:read(Process, doorLength) of
+		 true ->
+		   {true, fun(X) -> X end};
+		 false ->
+		   false
+	       end
+	   end
+	},
+	#transition
+	{type        =   'read',
+	 next_state  =   doorsDisabled,
+	 guard       =
+	   fun(Process, {Doors, TR, DB}) ->
+	       case uml:read(Process, i) == uml:read(Process, doorLength) of
+		 true ->
+		   {true, fun(X) -> X end};
+		 false ->
+		   false
+	       end
+	   end
+	}
+       ]
     };
 
 
@@ -277,20 +276,14 @@ state(doorsDisabled) ->
                  next_state  =   movingTrain,
                  %%XXX This transition may represent a TOUT expiration
                  guard       =
-                    fun (timeoutEXPIRED, Process, TR) ->
+                    fun (Process, {Doors, TR, DB}) ->
                         {true,
-                         fun (X) ->
-                            uml:signal(TR, enable),
-                            X
-                         end};
-                        (_, _, _) -> false
+                         fun (State) ->
+			     uml:signal(TR, enable),
+			     State
+                         end}
                     end
                  }
-            ],
-        do=
-            fun(_Process, State) ->
-                io:format("Setting a timout...~n"), %XXX Something must be added to generate a self-signal representing the expiration of a TOUT
-                State
-            end
+            ]
     }.
 

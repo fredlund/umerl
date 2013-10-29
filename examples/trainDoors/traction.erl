@@ -1,81 +1,88 @@
-% Traction SM
+%% Traction SM
 -module(traction).
 -include("../../src/records.hrl").
 -include("../../src/umerl.hrl").
--compile(export_all).
+-export([init/1,state/1]).
 
 init(_Arg) ->
-    {stopped, void}.
+  {stopped, void}.
 
 state(stopped) ->
-    #uml_state
+  #uml_state
     {name = stopped,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   moving,
-                 guard       =
-                    fun (enable, _Process, State) ->
-                        {true,
-                        fun (X) -> X end 
-						 };
-                        (_, _, _) -> false
-                    end}
-            ]
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   moving,
+	 guard       =
+	   fun (enable, Process, State) ->
+	       {true,
+		fun (State) ->
+		    uml:assign(Process,accelerating,true),
+		    State
+		end};
+	       (_, _, _) -> false
+	   end}
+       ]
     };
-    
+
+
 state(moving) ->
-    #uml_state
+  #uml_state
     {name = moving,
-        type = 'receive',
-        transitions=
-            [
-                #transition
-                {type        =   'receive',
-                 next_state  =   breaking,
-                 guard       =
-                    fun (disable, _Process, State) ->
-                        {true,
-                        fun (X) -> X end 
-						 };
-                        (_, _, _) -> false
-                    end}
-            ],
-		do=
-			fun(_Process, State) ->
-				io:format("Moving train...~n"),
-				State
-			end
+     type = 'receive',
+     transitions=
+       [
+	#transition
+	{type        =   'receive',
+	 next_state  =   breaking,
+	 guard       =
+	   fun (disable, Process, State) ->
+	       {true,
+		fun (State) ->
+		    uml:assign(Process,accelerating,false),
+		    uml:assign(Process,breaking,true),
+		    State
+		end 
+	       };
+	       (_, _, _) -> false
+	   end}
+       ],
+     do=
+       fun(_Process) ->
+	   io:format("Moving train...~n")
+       end
     };
 
 
 state(breaking) ->
-    #uml_state
+  #uml_state
     {name = breaking,
-        type = 'read',
-        transitions=
-            [
-                #transition
-                {type        =   'read',
-                 next_state  =   stopped,
-                 guard       =
-                    fun(Process, T) ->
-                    	case uml:read(Process, speed) of
-                        	0 ->
-                        		{true, fun(State) ->
-                        					uml:signal(T, trainStopped),
-					      					State
-                                       end};
-                            false -> false
-                            end
-						 end}
-            ],
-		do= 
-			fun(_Process, State) ->
-				io:format("Breaking train...~n"),
-				State
-			end
+     type = 'read',
+     transitions=
+       [
+	#transition
+	{type        =   'read',
+	 next_state  =   stopped,
+	 guard       =
+	   fun(Process, T) ->
+	       case uml:read(Process, speed) of
+		 0 ->
+		   {true,
+		    fun(State) ->
+			uml:signal(T, trainStopped),
+			uml:assign(Process,breaking,false),
+			State
+		    end};
+		 false -> false
+	       end
+	   end}
+       ],
+     do= 
+       fun(_Process) ->
+	   io:format("Breaking train...~n")
+       end
     }.
 

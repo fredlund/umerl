@@ -4,6 +4,9 @@
 -type actionfun() ::
 	fun((any()) -> any()).
 
+-type contextfun() ::
+	fun((context()) -> any()).
+
 -type statefun() ::
 	fun((context(),any()) -> any()).
 
@@ -45,7 +48,7 @@
 	  %% Entry action
 	  entry=void :: 'void' | statefun(),
 	  %% Do action
-	  do=void :: 'void' | fun(),
+	  do=void :: 'void' | contextfun(),
 	  %% Exit action
 	  exit=void :: 'void' | statefun()
 	}).
