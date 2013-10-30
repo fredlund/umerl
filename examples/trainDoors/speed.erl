@@ -29,8 +29,7 @@ state(stopped) ->
 		    end};
 		 false ->
 		   false
-	       end;
-	       (_, _) -> false
+	       end
 	   end}
        ]
     };
@@ -49,8 +48,7 @@ state(moving) ->
 	       case uml:read(Process,breaking) of
 		 true -> {true, fun(State) -> State end};
 		 false -> false
-	       end;
-	       (_, _) -> false
+	       end
 	   end}
        ],
      do=

@@ -27,8 +27,7 @@ state(thinking) ->
 		    io:format("~p: sending acquire~n",[self()]),
 		    uml:signal(FL,{acquire,self()}),
 		    State
-		end};
-	       (_,_) -> false
+		end}
 	   end}
        ]};
 
@@ -90,8 +89,7 @@ state(eating) ->
 	       {true,
 		fun (State) ->
 		    State
-		end};
-	       (_,_) -> false
+		end}
 	   end}
        ],
     do=
