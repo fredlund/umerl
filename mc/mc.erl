@@ -94,5 +94,27 @@ mch(N) ->
 		  #mce_opts{algorithm={mce_alg_safety,void},
 			    output = false,
 			    is_infinitely_fast=true,
-			    monitor={stateMon,fun monPreds:speed_always_zero/1},
+			    monitor={stateMon,fun monPreds:speed_zero/1},
 			    sends_are_sefs=true}}}}).
+
+mev(N) ->
+  mce:start
+    (#mce_opts
+     {program={system,start,[N]},
+      is_infinitely_fast=true,
+      output = false,
+      algorithm={mce_alg_combine,
+		 {#mce_opts{algorithm={mce_alg_simulation,void},
+			    sends_are_sefs=true,
+			    output = false,
+			    is_infinitely_fast=true,
+			    scheduler={sched,void}},
+		  #mce_opts{algorithm={mce_alg_buechi,void},
+			    output = false,
+			    is_infinitely_fast=true,
+			    monitor=
+			      eventually:monEv
+				(monPreds:statePred_to_buechiPred
+				 (fun monPreds:speed_zero/1)),
+			    sends_are_sefs=true}}}}).
+

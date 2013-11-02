@@ -5,9 +5,9 @@
 -include("erlang/node.hrl").
 -include("erlang/process.hrl").
 
--export([speed_always_zero/1]).
+-export([speed_zero/1,statePred_to_buechiPred/1]).
 
-speed_always_zero(State) ->
+speed_zero(State) ->
   case registered_process(State,'traction') of
     {ok,P} -> 
       Value = ets_lookup_var('speed',P#process.pid,State),
@@ -38,6 +38,14 @@ ets_lookup_var(Name,Pid,State) ->
 	 Value;
 	 (_,Acc) -> Acc
      end, void, Node#node.dict).
+
+statePred_to_buechiPred(StatePred) ->
+  fun (State,_,_) ->
+      case StatePred(State) of
+	true -> true;
+	_ -> false
+      end
+  end.
 
 	 
   
