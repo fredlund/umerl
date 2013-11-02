@@ -7,8 +7,9 @@
 
 -ifdef(McErlang).
 -define(CHOOSE(L),mce_erl:choice(L)).
+-define(OUTPUT(FORMAT,ARGS),mce_erl:apply(io,format,[FORMAT,ARGS])).
 -else.
--define(CHOOSE(L),choose(L)).
+-define(OUTPUT(FORMAT,ARGS),io:format(FORMAT,ARGS)).
 -endif.
 
 -record(machine,
@@ -47,16 +48,9 @@ start(MachineSpecs,InitVars) ->
   {_,Machines} =
     lists:foldl
       (fun ({Module,Init},{N,Acc}) ->
-	   PreMachine = #machine{module=Module},
-	   {UMLStateName,DataState} = Module:init(Init),
-	   {N+1,
-	    add_machine
-	      (PreMachine#machine
-	       {id=N,
-		mailbox=[],
-		uml_state_name=UMLStateName,
-		data_state=DataState},
-	       Acc)}
+	   {N+1,add_machine(create_machine(N,Module,Init),Acc)};
+	   ({Name,Module,Init},{N,Acc}) ->
+	   {N,add_machine(create_machine(Name,Module,Init),Acc)}
        end,
        {0,[]},
        MachineSpecs),
@@ -64,6 +58,15 @@ start(MachineSpecs,InitVars) ->
     (#process
      {machines=Machines,
       memory=Memory}).
+
+create_machine(Name,Module,Init) ->
+  PreMachine = #machine{module=Module},
+  {UMLStateName,DataState} = Module:init(Init),
+  PreMachine#machine
+    {id=Name,
+     mailbox=[],
+     uml_state_name=UMLStateName,
+     data_state=DataState}.
 
 -spec loop(#process{}) -> no_return().
 loop(State) ->
@@ -108,10 +111,10 @@ do_read(State) ->
 			    Machine#machine
 			      {mailbox=Machine#machine.mailbox++[Msg]};
 			  false ->
-			    io:format
-			      ("*** warning: machine ~p throwing away "++
-				 "message ~p~n",
-			       [MachineId,Msg]),
+			    ?OUTPUT
+			      ("*** warning: machine ~p discarded "++
+				 "~p in ~p~n",
+			       [MachineId,Msg,Machine#machine.uml_state_name]),
 			    Machine
 			end}
 		   end, State#process.machines)});
@@ -301,9 +304,19 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
 	  true ->
 	    lists:filter
 	      (fun (Msg) -> 
-		   run_defer
+		   case
+		     run_defer
 		     (Defer,Msg,ToState,DataState,
-		      {in_process,{State#process.memory,self()}})
+		      {in_process,{State#process.memory,self()}}) of
+		     true ->
+		       true;
+		     false ->
+		       ?OUTPUT
+			  ("*** warning: machine ~p discarded "++
+			     "~p in ~p~n",
+			   [Machine#machine.id,Msg,ToState]),
+		       false
+		   end
 	       end, Mailbox)
 	end;
       true -> Mailbox
