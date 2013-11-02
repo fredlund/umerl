@@ -79,3 +79,20 @@ sim2(N) ->
 			    sends_are_sefs=true,
 			    is_infinitely_fast=true}}}}).
 
+mch(N) ->
+  mce:start
+    (#mce_opts
+     {program={system,start,[N]},
+      is_infinitely_fast=true,
+      output = false,
+      algorithm={mce_alg_combine,
+		 {#mce_opts{algorithm={mce_alg_simulation,void},
+			    sends_are_sefs=true,
+			    output = false,
+			    is_infinitely_fast=true,
+			    scheduler={sched,void}},
+		  #mce_opts{algorithm={mce_alg_safety,void},
+			    output = false,
+			    is_infinitely_fast=true,
+			    monitor={stateMon,fun monPreds:speed_always_zero/1},
+			    sends_are_sefs=true}}}}).
