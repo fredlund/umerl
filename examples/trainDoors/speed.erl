@@ -30,8 +30,7 @@ state(stopped) ->
 		    end};
 		 false ->
 		   false
-	       end;
-	       (_, _) -> false
+	       end
 	   end}
        ]
     };
@@ -50,8 +49,7 @@ state(moving) ->
 	       case uml:read(Process,breaking) of
 		 true -> {true, fun(State) -> io:format("beginning to brake~n"), State end};
 		 false -> false
-	       end;
-	       (_, _) -> false
+	       end
 	   end}
        ]
     };
