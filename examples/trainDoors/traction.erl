@@ -49,11 +49,7 @@ state(moving) ->
 	       };
 	       (_, _, _) -> false
 	   end}
-       ],
-     do=
-       fun(_Process) ->
-	   io:format("Moving train...~n")
-       end
+       ]
     };
 
 
@@ -79,10 +75,6 @@ state(breaking) ->
 		 false -> false
 	       end
 	   end}
-       ],
-     do= 
-       fun(_Process) ->
-	   io:format("Breaking train...~n")
-       end
+       ]
     }.
 

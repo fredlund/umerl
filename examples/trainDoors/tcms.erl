@@ -196,7 +196,7 @@ state(disablingDoors) ->
 	 next_state  =   doorsDisabled,
 	 guard       =
 	   fun(Process, {Doors, TR, DB}) ->
-	       case uml:read(Process, i) == uml:read(Process, doorLength) of
+	       case uml:read(Process, i) > uml:read(Process, doorLength) of
 		 true ->
 		   {true, fun(X) -> X end};
 		 false ->
@@ -221,11 +221,11 @@ state(disabledDoor_entry) ->
                     fun (Process, {Doors, TR, DB}) ->
                         {true, 
                          fun (State) ->
-                            Counter = uml:read(Process, i),
-                            Door = lists:nth(Counter, Doors),
+			     Counter = uml:read(Process, i),
+			     Door = lists:nth(Counter, Doors),
 			     uml:signal(Door, disable),
-                            uml:assign(Process, i, Counter + 1),
-                            State
+			     uml:assign(Process, i, Counter + 1),
+			     State
                          end}
                     end}
             ]

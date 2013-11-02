@@ -11,13 +11,13 @@ start(NDoors) ->
   DriverButton = 'driverButton',
   register
     (DriverButton,
-     spawn_link(fun () -> timer:sleep(100), process:start([{driverButton,TCMS}]) end)),
+     spawn_link(fun () -> sleep(1000), process:start([{driverButton,TCMS}]) end)),
   Traction = 'traction',
   register
     (Traction,
      spawn_link
        (fun () ->
-	    timer:sleep(100),
+	    sleep(1000),
 	    process:start
 	      ([{traction,void},
 		{speed,void}],
@@ -29,43 +29,51 @@ start(NDoors) ->
 	end)),
   register
     (TCMS,
-     spawn_link(fun () -> timer:sleep(100), process:start([{tcms,{Doors,Traction,DriverButton}}],fun (Process) -> uml:assign(Process,doorLength,length(Doors)) end) end)),
-  
-  %% we fake a doorbutton press
-  uml:signal(list_to_atom("doorButton_2"),press),
-  uml:signal(list_to_atom("driverButton"),press),
-  uml:signal(list_to_atom("tcms"),disableDoors).
+     spawn_link
+       (fun () ->
+	    sleep(1000),
+	    process:start
+	      ([{tcms,{Doors,Traction,DriverButton}}],
+	       fun (Process) ->
+		   uml:assign(Process,doorLength,length(Doors))
+	       end)
+	end)),
+  example:example1().
 
 create_doors(N,TCMS) ->
   lists:map
     (fun (N) ->
 	 NS = integer_to_list(N),
 	 Door = list_to_atom("door_"++NS),
-	 OpenSensor = list_to_atom("limitSensor_"++NS),
+	 OpenSensor = list_to_atom("openSensor_"++NS),
 	 register
 	   (OpenSensor,
-	    spawn_link(fun () -> timer:sleep(100), process:start([{limitSensor,Door}]) end)),
+	    spawn_link(fun () -> sleep(1000), process:start([{limitSensor,Door}]) end)),
 	 CloseSensor = list_to_atom("closeSensor_"++NS),
 	 register
 	   (CloseSensor,
-	    spawn_link(fun () -> timer:sleep(100), process:start([{limitSensor,Door}]) end)),
+	    spawn_link(fun () -> sleep(1000), process:start([{limitSensor,Door}]) end)),
 	 ObstacleSensor = list_to_atom("obstacleSensor_"++NS),
 	 register
 	   (ObstacleSensor,
-	    spawn_link(fun () -> timer:sleep(100), process:start([{obstacleSensor,Door}]) end)),
+	    spawn_link(fun () -> sleep(1000), process:start([{obstacleSensor,Door}]) end)),
 	 DoorButton = list_to_atom("doorButton_"++NS),
 	 register
 	   (DoorButton,
-	    spawn_link(fun () -> timer:sleep(100), process:start([{doorButton,Door}]) end)),
+	    spawn_link(fun () -> sleep(1000), process:start([{doorButton,Door}]) end)),
 	 register
 	   (Door,
 	    spawn_link
 	      (fun () ->
-		   timer:sleep(100), process:start([{door,{TCMS, OpenSensor, CloseSensor, ObstacleSensor}}])
+		   sleep(1000), process:start([{door,{TCMS, OpenSensor, CloseSensor, ObstacleSensor}}])
 	       end)),
 	 Door
      end, lists:seq(1,N)).
 
+sleep(N) ->
+  receive
+  after N -> ok 
+  end.
 
   
 

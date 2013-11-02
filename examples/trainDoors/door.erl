@@ -277,10 +277,6 @@ state(wait4closing) ->
                          (_, _, _) -> false
                     end}
 
-            ],
-         do = 
-            fun(_Process) ->
-                io:format("Closing door...~n")
-            end
+            ]
     }.
 

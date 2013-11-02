@@ -33,7 +33,6 @@ return(To,Msg) ->
 -spec assign(context(),atom(),any()) -> any().
 assign({in_process,{Table,_Process}},Var,Value) ->
   ets:insert(Table,{Var,Value}),
-  put(var_write,true),
   Value;
 assign({outside_process,{MachinePid,Process,Table}},Var,Value) ->
   Process!{write,MachinePid,Var,Value},

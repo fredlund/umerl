@@ -1,5 +1,6 @@
 sources = $(wildcard ../src/*.erl) 
 sources += $(wildcard ../examples/*.erl)
+sources += $(wildcard ../examples/trainDoors/*.erl)
 sources += $(wildcard *.erl)
 beams = $(patsubst %.erl,ebin/%.beam,$(sources))
 

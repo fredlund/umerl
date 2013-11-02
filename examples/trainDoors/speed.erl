@@ -25,6 +25,7 @@ state(stopped) ->
 		   {true,
 		    fun (State) ->
 			uml:assign(Process,speed,?NONZERO),
+			io:format("speed became nonzero~n"),
 			State
 		    end};
 		 false ->
@@ -47,16 +48,12 @@ state(moving) ->
 	 guard       =
 	   fun (Process, State) ->
 	       case uml:read(Process,breaking) of
-		 true -> {true, fun(State) -> State end};
+		 true -> {true, fun(State) -> io:format("beginning to brake~n"), State end};
 		 false -> false
 	       end;
 	       (_, _) -> false
 	   end}
-       ],
-     do=
-       fun(_Process) ->
-	   io:format("Moving train...~n")
-       end
+       ]
     };
 
 
@@ -74,13 +71,10 @@ state(breaking) ->
 	       {true,
 		fun (State) ->
 		    uml:assign(Process,speed,0),
+		    io:format("speed became zero~n"),
 		    State
 		end}
 	   end}
-       ],
-     do= 
-       fun(_Process) ->
-	   io:format("Breaking train...~n")
-       end
+       ]
     }.
 
