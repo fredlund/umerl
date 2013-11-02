@@ -101,10 +101,19 @@ do_read(State) ->
 	     {changed=true,
 	      machines=
 		lists:map
-		  (fun ({MachinePid,Machine}) ->
-		       {MachinePid,
-			Machine#machine
-			{mailbox=Machine#machine.mailbox++[Msg]}}
+		  (fun ({MachineId,Machine}) ->
+		       {MachineId,
+			case keep_message(Msg,Machine,State) of
+			  true -> 
+			    Machine#machine
+			      {mailbox=Machine#machine.mailbox++[Msg]};
+			  false ->
+			    io:format
+			      ("*** warning: machine ~p throwing away "++
+				 "message ~p~n",
+			       [MachineId,Msg]),
+			    Machine
+			end}
 		   end, State#process.machines)});
 	{write,{MachineId,Var,Value}} ->
 	  ?LOG
@@ -292,28 +301,9 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
 	  true ->
 	    lists:filter
 	      (fun (Msg) -> 
-		   try Defer(Msg,DataState,{in_process,{State#process.memory,self()}})
-		   catch Class:Reason ->
-		       Stacktrace = erlang:get_stacktrace(),
-		       io:format
-			 ("~n*** Error: ~p: evaluation of defer function ~p~n"
-			  ++"for machine ~p (~p) in"
-			  ++" transition from machine state ~p to machine state ~p with process state~n  ~p"
-			  ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
-			  ++"~nStacktrace:~n~p~n~n",
-			  [symbolic_name(self()),
-			   GuardAction,
-			   Machine#machine.module,
-			   Machine#machine.id,
-			   FromState,
-			   ToState,
-			   State,
-			   DataState,
-			   Class,
-			   Reason,
-			   Stacktrace]),
-		       erlang:raise(Class,Reason,Stacktrace)
-		   end
+		   run_defer
+		     (Defer,Msg,ToState,DataState,
+		      {in_process,{State#process.memory,self()}})
 	       end, Mailbox)
 	end;
       true -> Mailbox
@@ -430,12 +420,56 @@ run_transition({GuardAction,ChosenTransition,Machine},State) ->
        State),
   loop(NewState#process{changed=true}).
 
+%% A message should be kept if can possibly be read, or deferred, 
+%% in the current state, irrespective of the current mailbox.
+keep_message(Msg,Machine,State) ->
+  StateName = Machine#machine.uml_state_name,
+  DataState = Machine#machine.data_state,
+  UMLState = (Machine#machine.module):state(StateName),
+  Transitions = UMLState#uml_state.transitions,
+  {ReadTransitions, ReceiveTransitions} = classify_transitions(Transitions),
+  case try_receive_msg(Msg,ReceiveTransitions,DataState,State,StateName,Machine) of
+    [] -> is_deferrable(Msg,Machine,State);
+    _ -> true
+  end.
 
-  
-  
+is_deferrable(Msg,Machine,State) ->
+  StateName = Machine#machine.uml_state_name,
+  DataState = Machine#machine.data_state,
+  UMLState = (Machine#machine.module):state(StateName),
+  Defer = UMLState#uml_state.defer,
+  if
+    Defer == all ->
+      true;
+    Defer == none ->
+      false;
+    true ->
+      run_defer
+	(Defer,Msg,StateName,DataState,
+	 {in_process,{State#process.memory,self()}})
+  end.
 
+run_defer(Defer,Msg,StateName,DataState,Context) ->
+  try Defer(Msg,DataState,Context)
+  catch Class:Reason ->
+      Stacktrace = erlang:get_stacktrace(),
+      io:format
+	("~n*** Error: ~p: evaluation of defer function ~p~n"
+	 ++"for machine ~p (~p) in"
+	 ++" machine state ~p "
+	 ++"~nwith data~n  ~p~nraises exception ~p:~p~n"
+	 ++"~nStacktrace:~n~p~n~n",
+	 [symbolic_name(self()),
+	  Defer,
+	  StateName,
+	  DataState,
+	  Class,
+	  Reason,
+	  Stacktrace]),
+      erlang:raise(Class,Reason,Stacktrace)
+  end.
+  
 
       
-  
       
   
