@@ -501,7 +501,11 @@ defer_value(void) ->
   case umerl:getOption(discard_is_default) of
     true -> none;
     false -> all
-  end.
+  end;
+defer_value(Other) ->
+  Other.
+
+
 
       
       
