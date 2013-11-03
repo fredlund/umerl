@@ -97,7 +97,8 @@ mch(N) ->
 			    monitor={stateMon,fun monPreds:speed_zero/1},
 			    sends_are_sefs=true}}}}).
 
-mev(N) ->
+mev(N,Discard) ->
+  umerl:setOptions([{discard_is_default,Discard}]),
   mce:start
     (#mce_opts
      {program={system,start,[N]},

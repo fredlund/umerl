@@ -306,7 +306,7 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
     if
       FromState =/=  ToState ->
 	NewState = (Machine#machine.module):state(ToState),
-	Defer = NewState#uml_state.defer,
+	Defer = defer_value(NewState#uml_state.defer),
 	if
 	  Defer == all -> Mailbox;
 	  Defer == none -> [];
@@ -465,7 +465,7 @@ is_deferrable(Msg,Machine,State) ->
   StateName = Machine#machine.uml_state_name,
   DataState = Machine#machine.data_state,
   UMLState = (Machine#machine.module):state(StateName),
-  Defer = UMLState#uml_state.defer,
+  Defer = defer_value(UMLState#uml_state.defer),
   if
     Defer == all ->
       true;
@@ -497,6 +497,11 @@ run_defer(Defer,Msg,StateName,DataState,Context) ->
       erlang:raise(Class,Reason,Stacktrace)
   end.
   
+defer_value(void) ->
+  case umerl:getOption(discard_is_default) of
+    true -> none;
+    false -> all
+  end.
 
       
       

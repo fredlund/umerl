@@ -44,7 +44,7 @@
 	  %% May be all, or a function
 	  %% (over messages, object state and machine state).
 	  %% Default is all.
-	  defer=none :: 'all' | 'none' | deferfun(),
+	  defer=void :: 'void' | 'all' | 'none' | deferfun(),
 	  %% Entry action
 	  entry=void :: 'void' | statefun(),
 	  %% Do action
