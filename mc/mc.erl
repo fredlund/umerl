@@ -118,3 +118,35 @@ mev(N) ->
 				 (fun monPreds:speed_zero/1)),
 			    sends_are_sefs=true}}}}).
 
+md(N) ->
+  umerl:setOptions([{discard_is_error,true}]),
+  mce:start
+    (#mce_opts
+     {program={system,start,[N]},
+      is_infinitely_fast=true,
+      output = false,
+      algorithm={mce_alg_combine,
+		 {#mce_opts{algorithm={mce_alg_simulation,void},
+			    sends_are_sefs=true,
+			    output = false,
+			    is_infinitely_fast=true,
+			    scheduler={sched,void}},
+		  #mce_opts{algorithm={mce_alg_safety,void},
+			    output = false,
+			    is_infinitely_fast=true,
+			    sends_are_sefs=true}}}}).
+
+md2(N) ->
+  umerl:setOptions([{discard_is_error,true}]),
+  mce:start
+    (#mce_opts
+     {program={system,start,[N]},
+      is_infinitely_fast=true,
+      output = false,
+      algorithm={mce_alg_safety,void},
+      table=mce_table_hashWithActions,
+      shortest=true,
+      sends_are_sefs=true}).
+
+  
+

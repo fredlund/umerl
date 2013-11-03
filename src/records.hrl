@@ -53,4 +53,6 @@
 	  exit=void :: 'void' | statefun()
 	}).
 
-	 
+-type option() :: {discard_is_error,boolean()}
+		| {discard_is_default,boolean()}.
+

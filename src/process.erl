@@ -8,8 +8,11 @@
 -ifdef(McErlang).
 -define(CHOOSE(L),mce_erl:choice(L)).
 -define(OUTPUT(FORMAT,ARGS),mce_erl:apply(io,format,[FORMAT,ARGS])).
+-define(GET_OPTION(OPTION),mce_erl:apply(umerl,getOption,[OPTION])).
 -else.
+-define(CHOOSE(L),choose(L)).
 -define(OUTPUT(FORMAT,ARGS),io:format(FORMAT,ARGS)).
+-define(GET_OPTION(OPTION),umerl:getOption(OPTION)).
 -endif.
 
 -record(machine,
@@ -115,6 +118,12 @@ do_read(State) ->
 			      ("*** warning: machine ~p discarded "++
 				 "~p in ~p~n",
 			       [MachineId,Msg,Machine#machine.uml_state_name]),
+			    case ?GET_OPTION(discard_is_error) of
+			      true ->
+				throw({discard,Msg,Machine#machine.uml_state_name});
+			      false ->
+				ok
+			    end,
 			    Machine
 			end}
 		   end, State#process.machines)});
@@ -315,6 +324,12 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
 			  ("*** warning: machine ~p discarded "++
 			     "~p in ~p~n",
 			   [Machine#machine.id,Msg,ToState]),
+		       case ?GET_OPTION(discard_is_error) of
+			 true ->
+			   throw({discard,Msg,ToState});
+			 false ->
+			   ok
+		       end,
 		       false
 		   end
 	       end, Mailbox)
