@@ -135,7 +135,8 @@ do_read(State) ->
 		lists:map
 		  (fun ({MachineId,Machine}) ->
 		       {MachineId,
-			case keep_message(Msg,Machine,State) of
+			case not(?GET_OPTION(early_discard))
+			  orelse keep_message(Msg,Machine,State) of
 			  true -> 
 			    Machine#machine
 			      {mailbox=Machine#machine.mailbox++[Msg]};
@@ -269,11 +270,19 @@ try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State,StateName,M
     [] ->
       try_receive_msgs(Rest,[Msg|Seen],Transitions,DataState,Machine,State,StateName,Machine);
     Results ->
-      NewMailbox = lists:reverse(Seen,Rest),
+      NewMailbox = lists:reverse(discard_messages(Seen,Machine,State),Rest),
       NewMachine = Machine#machine{mailbox=NewMailbox},
       lists:map
 	(fun ({GuardAction,Transition}) -> {GuardAction,Transition,NewMachine} end,
 	 Results)
+  end.
+
+discard_messages(Messages,Machine,State) ->
+  case ?GET_OPTION(early_discard) of
+    true ->
+      Messages;
+    false ->
+      lists:filter(fun (Msg) -> keep_message(Msg,Machine,State) end, Messages)
   end.
 
 try_receive_msg(Msg,Transitions,DataState,State,StateName,Machine) ->
@@ -332,7 +341,11 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
     if
       FromState =/=  ToState ->
 	NewState = (Machine#machine.module):state(ToState),
-	Defer = defer_value(NewState#uml_state.defer),
+	Defer =
+	  case ?GET_OPTION(early_discard) of
+	    true -> defer_value(NewState#uml_state.defer);
+	    false -> all
+	  end,
 	if
 	  Defer == all -> Mailbox;
 	  Defer == none -> [];

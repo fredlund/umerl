@@ -74,6 +74,8 @@ defaultValue(discard_is_error) ->
   false;
 defaultValue(discard_is_default) ->
   true;
+defaultValue(early_discard) ->
+  false;
 defaultValue(_) ->
   void.
 
