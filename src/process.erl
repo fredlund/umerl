@@ -66,10 +66,21 @@
 -define(LOG(X,Y), ok).
 -endif.
 
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% that should run when the container is created.
 -spec start([{atom(),any()}]) -> no_return().
 start(MachineSpecs) ->
   start(MachineSpecs,fun (_) -> ok end).
 
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
 -spec start([{atom(),any()}],fun((context())->any())) -> no_return().
 start(MachineSpecs,InitVars) ->
   Memory = ets:new(private,[public]),
@@ -115,12 +126,14 @@ loop(State) ->
       do_read(ReadState)
   end.
 
+%% @private
 run_machines(State) ->
   case compute_transitions(State) of
     [] -> loop(modify_change_status(State,false));
     Transitions -> pick_a_transition(Transitions,State)
   end.
 
+%% @private
 do_read(State) ->
   receive
     RawMsg -> 
@@ -427,6 +440,7 @@ choose(L) ->
     {M,F,Args} -> apply(M,F,Args)
   end.
 
+%% @private
 run_transition({GuardAction,ChosenTransition,Machine},State) ->  
   NextState =
     ChosenTransition#transition.next_state,
