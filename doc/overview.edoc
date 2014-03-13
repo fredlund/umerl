@@ -8,9 +8,15 @@ design of the interpreter, it is possible to either execute
 state machine, or to verify them using a model checker
 (e.g., <a href="https://babel.ls.fi.upm.es/trac/McErlang/wiki">McErlang</a>).
 <p>
-The primary functionality is that the library provides
-functions for creating and interacting with Java objects
-without the need to write any boilerplate code.
+UMLErl currently does not have support for simulating UML 
+state machines which are written in UML graphical syntax.
+An interface from XML-based XMI format is being prototyped,
+but is not yet ready. The consequence is that UML state machines
+are written in an internal format, which is a mix of Erlang
+and UML syntax, and the actions of the state machines
+are expressed as Erlang functions. In the following we document 
+the internal format of the state machines, and provide examples
+to illustrate how UML behaviour can be encoded in Erlang functions.
 </p>
 <p>
 An example:<br/>
