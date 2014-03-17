@@ -297,6 +297,7 @@ be deferred, and false if the event should not be deferred in
 the current state.
 
 <h2>Specifying the Dining Philosopher problem in the internal format</h2>
+<p>
 As an example we will provide the encoding of the philosopher and
 fork state machines, in the internal format, below.
 
@@ -320,7 +321,7 @@ state(idle) ->
        [
 	#transition
 	{type='receive',
-	 next_state=acquired,
+	 next_state=beingUsed,
 	 guard=
 	   fun ({acquire,From},_Process,_State) -> 
 	       {true,
@@ -332,9 +333,9 @@ state(idle) ->
 	   end}
        ]};
 
-state(acquired) ->
+state(beingUsed) ->
   #uml_state
-    {name=acquired,
+    {name=beingUsed,
      type='receive',
      defer=fun ({acquire,_},_,_) -> true; (_,_,_) -> false end,
      transitions=
@@ -343,7 +344,7 @@ state(acquired) ->
 	{type='receive',
 	 next_state=idle,
 	 guard=
-	   fun (release,_Process,From) -> 
+	   fun (release,_Process,_) -> 
 	       {true,
 		fun (_State) ->
 		    void
@@ -353,6 +354,23 @@ state(acquired) ->
        ]}.
 '''
 
+The fork state machines has two states, ``idle'' and ``beingUsed'',
+with ``idle'' being the initial state.
+The ``idle'' state defines a single transition to the state
+``beingUsed'' triggered by the reception of a ``{acquire,From}''
+event, where ``From'' is the identity of the machine container
+issuing the event. The transition is triggered always, and
+performs the action to send a reply event using the 
+function call ``uml:signal(From,acquired)'', and
+saving the From parameter in the data state (for illustration
+purposes only, since it is not used later on).
+
+The ``beingUsed'' state has a single transition
+to the state ``idle'', which is triggered upon the reception of
+a ``release'' trigger event. 
+</p>
+
+<p>
 A philosopher state machine is implemented by the ``philosopher''
 module below:
 ```
@@ -380,7 +398,6 @@ state(thinking) ->
 	   fun (_Process,_) -> 
 	       {true,
 		fun (State={FL,FR}) ->
-		    io:format("~p: sending acquire~n",[self()]),
 		    uml:signal(FL,{acquire,self()}),
 		    State
 		end}
@@ -448,7 +465,7 @@ state(eating) ->
        ],
     do=
        fun (_Process) ->
-	   io:format("~p: eating spaghetti...~n",[self()])
+	   io:format("eating spaghetti...~n")
        end,
      exit=
        fun (_Process,State={FR,FL}) ->
@@ -458,6 +475,12 @@ state(eating) ->
        end
     }.
 '''
+
+The ``philosopher'' module is similar to the ``fork'' one. To illustrate
+the coding of do actions we let the state ``eating'' print out
+the message ''eating spaghetti...'' when a philosopher
+has acquired both forks.
+</p>
 @end
 
 
