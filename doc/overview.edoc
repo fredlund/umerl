@@ -19,6 +19,19 @@ the internal format of the state machines, and provide examples
 to illustrate how UML behaviour can be encoded in Erlang functions.
 </p>
 
+<h2>Installing UMLErl</h2>
+To install UMLErl first Erlang must be installed. If Erlang is
+not already installed on your operating system consult the
+<a href="www.erlang.org">Erlang web site</a> for instructions
+on how to install it. In the following we assume that a Linux-based
+operating system is used, although UMLErl can be installed
+on e.g. Windows too.
+
+To use UMLErl it simply has to be compiled:
+```
+$ make
+'''
+
 <h2>An Example</h2>
 As an example we will consider how work with the <a href="http://en.wikipedia.org/wiki/Dining_philosophers_problem">Dining
 Philosopher problem</a> in UMLErl. The specification of
@@ -40,12 +53,41 @@ section...
 
 In the following we assume that the codification
 of the philosopher and fork state machines are stored
-in the files ``philosopher.erl'' and ``fork.erl'' respectively. First
+in the files ``philosopher.erl'' and ``fork.erl'' respectively. First,
 we have to invoke the Erlang compiler on these files (in the following
-we assume a Linux-based system):
+we assume a Linux-based system). It is assumed that the current
+working directory is the top directory of the UMLErl distribution.
 ```
-$ erlc philosopher.erl fork.erl
+$ cd examples                                          # move to examples directory
+$ erlc philosopher.erl fork.erl table.erl -pz ../ebin  # recompile the dining example
 '''
+
+The file ``table.erl'' contains the Erlang code to start the dining philosopher
+and is shown below:
+```
+-module(table).
+-compile(export_all).
+
+table(N) ->
+  Forks = lists:map (fun (_) -> start_fork() end, lists:seq(1,N)),
+  lists:foreach
+    (fun ({L,R}) -> start_philosopher(L, R) end, adjacent(Forks)).
+
+adjacent([]) -> [];
+adjacent([X|Xs]) -> lists:zip([X] ++ Xs, Xs ++ [X]).
+
+start_fork() ->
+  spawn(fun () -> process:start([{fork,void}]) end).
+
+start_philosopher(L,R) ->
+  spawn(fun () -> process:start([{philosopher,{L,R}}]) end).
+
+test_table() ->
+  Left = start_fork(),
+  Right = start_fork(),
+  start_philosopher(Left,Right).
+'''
+
 
 The Java null value is represented as the Erlang atom ``null'',
 the Java boolean values true and false are represented as the
