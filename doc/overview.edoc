@@ -59,7 +59,7 @@ we assume a Linux-based system). It is assumed that the current
 working directory is the top directory of the UMLErl distribution.
 ```
 $ cd examples                                          # move to examples directory
-$ erlc philosopher.erl fork.erl table.erl -pz ../ebin  # recompile the dining example
+$ erlc philosopher.erl fork.erl table.erl -pa ../ebin  # recompile the dining example
 '''
 
 The file ``table.erl'' contains the Erlang code to start the dining philosopher
@@ -95,7 +95,7 @@ the addresses (Erlang pids) to its left and right fork processes.
 
 We can now run, e.g., simulate, a table with two philosophers and forks:
 ```
-$ erl -pz ../ebin/
+$ erl -pa ../ebin/
 Erlang R16B02 (erts-5.10.3) [source] [64-bit] [smp:12:12] [async-threads:10] [hipe] [kernel-poll:false]
 
 Eshell V5.10.3  (abort with ^G)
@@ -105,7 +105,7 @@ ok
 '''
 As we did not include any printouts in the philosophers and forks
 nothing was printed. We can suspect that there is a deadlock in the
-system, and one way to prove it is to use the <a href="https://babel.ls.fi.upm.es/trac/McErlang/">Erlang model checker</a> to find it.
+system, and one way to prove it is to use the <a href="https://babel.ls.fi.upm.es/trac/McErlang/">Erlang model checker</a> to find the deadlock.
 
 <h3>Using McErlang to debug the Dining Philosopher problem</h3>
 
@@ -117,15 +117,56 @@ problem using McErlang:
 
 ```
 $ mkdir mcerlang_ebin             # a temporary working dir
-$ mcerl_compiler -pz ../ebin -output_dir mcerlang_ebin -sources ../src/*.erl fork.erl philosopher.erl table.erl
+$ mcerl_compiler -pa ../ebin -output_dir mcerlang_ebin -sources ../src/*.erl fork.erl philosopher.erl table.erl
 '''
+
+Note that above we in fact also recompiled the sources for the whole 
+UMLErl interpreter; thus the UMLErl interpreter will run under the control
+of the McErlang model checker.
 
 We can now run the Dining Philosopher example in McErlang:
 ```
-$ mcerl -pz mcerlang_ebin 
+$ mcerl -pa mcerlang_ebin 
+Erlang R16B02 (erts-5.10.3) [source] [64-bit] [smp:12:12] [async-threads:10] [hipe] [kernel-poll:false]
+
+Eshell V5.10.3  (abort with ^G)
+
+1> rr(mce:find_mce_opts()).
+[mce_opts]
+
+2> mce:start(#mce_opts{program=fun () -> table:table(2) end}).
+Starting McErlang model checker version
+"McErlang 2.1.1 [revision ++ compiled on lun nov 4 11:45:04 CET 2013]" ...
+
+...
+*** Run ending. 276 states explored, stored states 157.
+
+...
+ok
+3> mce:start(#mce_opts{program=fun () -> table:table(2) end,monitor=mce_mon_deadlock}).
+Starting McErlang model checker version
+"McErlang 2.1.1 [revision ++ compiled on lun nov 4 11:45:04 CET 2013]" ...
+
+...
+*** Monitor failed
+monitor error:
+deadlock
+Table has 11 states and 11 transitions.
+Stack depth 1 entries.
 '''
 
-
+First in line ``1>'' we obtain the definition of the ``#mce_opts'' records
+which is used to specify what McErlang should attempt to verify
+(see the McErlang manual for further explanations).
+In line ``2>'' then we check that the Dining Philosopher problem, with
+two philosophers, does not raise any runtime exception
+(checking for the absence of runtime exceptions is the default 
+action of McErlang), which it apparently doesn't.
+Then, in line ``3>'' we check whether there are any deadlocks
+by specifying the monitor (correctness property) ``mce_mon_deadlock'',
+and indeed, McErlang quickly finds an error. We could then
+proceed to investigate the error using e.g. the McErlang debugger, showing 
+the trace that leads to the error, but that exercise is left to the reader.
 
 <h2>UML State Machine format description</h2>
 

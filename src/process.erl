@@ -112,11 +112,13 @@ start(MachineSpecs,InitVars,Options) ->
       true -> spawn_link;
       false -> spawn
     end,
-  SpawnFun
-    (loop
-       (#process
-	{machines=Machines,
-	 memory=Memory})).
+  erlang:SpawnFun
+    (fun () ->
+	 loop
+	   (#process
+	    {machines=Machines,
+	     memory=Memory})
+     end).
 
 %% @doc Spawns a new container for state machines.
 %% The MachineSpecs parameter is a list of the state machines
