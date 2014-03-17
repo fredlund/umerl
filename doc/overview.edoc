@@ -87,6 +87,23 @@ test_table() ->
   Right = start_fork(),
   start_philosopher(Left,Right).
 '''
+The main function in ``table(N)'' which provided a natural number ``N'',
+creates a table with ``N'' philosophers and ``N'' forks.
+
+We let each state machine run in their own machine container.
+In the simulator/verifier, each container is mapped to a unique Erlang 
+process, and we will hence use the terminology container/process interchangeably.
+
+Such a container, with machines, is created using the
+function ``process:start(ListOfMachines)'' (further documentation available
+in the Modules section to the left).
+In the call ``process:start([{philosopher,{L,R}}])'', for example,
+a new process is started with one associated state machine. The
+machine is implemented by the Erlang module ``philosopher'',
+and the machine receives as initial arguments 
+(``fL'' and ``fR'' in the philosopher state machine above)
+the addresses (Erlang pids) to its left and right fork processes.
+
 
 
 The Java null value is represented as the Erlang atom ``null'',

@@ -26,7 +26,8 @@
 
 -module(process).
 
--export([start/1,start/2]).
+-export([start/1,start/2,start/3]).
+-export([start_link/1,start_link/2,start_link/3]).
 -export([run_machines/1,do_read/1,run_transition/2]).
 
 -include("records.hrl").
@@ -83,6 +84,18 @@ start(MachineSpecs) ->
 %% container is created.
 -spec start([{atom(),any()}],fun((context())->any())) -> no_return().
 start(MachineSpecs,InitVars) ->
+  start(MachineSpecs,InitVars,[]).
+
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
+-spec start([{atom(),any()}],fun((context())->any()),[any()]) -> no_return().
+start(MachineSpecs,InitVars,Options) ->
   Memory = ets:new(private,[public]),
   InitVars({in_process,{Memory,self()}}),
   {_,Machines} =
@@ -94,10 +107,47 @@ start(MachineSpecs,InitVars) ->
        end,
        {0,[]},
        MachineSpecs),
-  loop
-    (#process
-     {machines=Machines,
-      memory=Memory}).
+  SpawnFun =
+    case lists:member(link,Options) of
+      true -> spawn_link;
+      false -> spawn
+    end,
+  SpawnFun
+    (loop
+       (#process
+	{machines=Machines,
+	 memory=Memory})).
+
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% that should run when the container is created.
+-spec start_link([{atom(),any()}]) -> no_return().
+start_link(MachineSpecs) ->
+  start_link(MachineSpecs,fun (_) -> ok end).
+
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
+-spec start_link([{atom(),any()}],fun((context())->any())) -> no_return().
+start_link(MachineSpecs,InitVars) ->
+  start_link(MachineSpecs,InitVars,[]).
+
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
+-spec start_link([{atom(),any()}],fun((context())->any()),[any()]) -> no_return().
+start_link(MachineSpecs,InitVars,Options) ->
+  start(MachineSpecs,InitVars,[link|Options]).
 
 create_machine(Name,Module,Init) ->
   PreMachine = #machine{module=Module},
