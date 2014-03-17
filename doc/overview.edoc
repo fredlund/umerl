@@ -296,10 +296,168 @@ data state, and the context, returns true if the event should
 be deferred, and false if the event should not be deferred in
 the current state.
 
-<h3>Specifying the Dining Philosopher problem in the internal format</h3>
+<h2>Specifying the Dining Philosopher problem in the internal format</h2>
 As an example we will provide the encoding of the philosopher and
 fork state machines, in the internal format, below.
 
+A fork state machine is implemented by the ``fork'' module below:
+```
+-module(fork).
+
+-include("../src/records.hrl").
+-include("../src/umerl.hrl").
+
+-compile(export_all).
+
+init(_Arg) ->
+  {idle, void}.
+
+state(idle) ->
+  #uml_state
+    {name=idle,
+     type='receive',
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=acquired,
+	 guard=
+	   fun ({acquire,From},_Process,_State) -> 
+	       {true,
+		fun (_State) ->
+		    uml:signal(From,acquired),
+		    From
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]};
+
+state(acquired) ->
+  #uml_state
+    {name=acquired,
+     type='receive',
+     defer=fun ({acquire,_},_,_) -> true; (_,_,_) -> false end,
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=idle,
+	 guard=
+	   fun (release,_Process,From) -> 
+	       {true,
+		fun (_State) ->
+		    void
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]}.
+'''
+
+A philosopher state machine is implemented by the ``philosopher''
+module below:
+```
+-module(philosopher).
+
+-include("../src/records.hrl").
+-include("../src/umerl.hrl").
+
+-compile(export_all).
+
+init(Arg) ->
+  {thinking, Arg}.
+
+state(thinking) ->
+  #uml_state
+    {name=thinking,
+     type='read',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='read',
+	 next_state=hungry,
+	 guard=
+	   fun (_Process,_) -> 
+	       {true,
+		fun (State={FL,FR}) ->
+		    io:format("~p: sending acquire~n",[self()]),
+		    uml:signal(FL,{acquire,self()}),
+		    State
+		end}
+	   end}
+       ]};
+
+state(hungry) ->
+  #uml_state
+    {name=hungry,
+     type='receive',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=waiting,
+	 guard=
+	   fun (acquired,_Process,_State) -> 
+	       {true,
+		fun (State={FL,FR}) ->
+		    uml:signal(FR,{acquire,self()}),
+		    State
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]};
+
+state(waiting) ->
+  #uml_state
+    {name=waiting,
+     type='receive',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=eating,
+	 guard=
+	   fun (acquired,_Process,_State) -> 
+	       {true,
+		fun (State) ->
+		    State
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]};
+
+state(eating) ->
+  #uml_state
+    {name=eating,
+     type='read',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='read',
+	 next_state=thinking,
+	 guard=
+	   fun (_Process,_State) -> 
+	       {true,
+		fun (State) ->
+		    State
+		end}
+	   end}
+       ],
+    do=
+       fun (_Process) ->
+	   io:format("~p: eating spaghetti...~n",[self()])
+       end,
+     exit=
+       fun (_Process,State={FR,FL}) ->
+	   uml:signal(FR,release),
+	   uml:signal(FL,release),
+	   State
+       end
+    }.
+'''
 @end
 
 
