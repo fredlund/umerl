@@ -295,6 +295,11 @@ to specify a function which, provided a trigger, the
 data state, and the context, returns true if the event should
 be deferred, and false if the event should not be deferred in
 the current state.
+
+<h3>Specifying the Dining Philosopher problem in the internal format</h3>
+As an example we will provide the encoding of the philosopher and
+fork state machines, in the internal format, below.
+
 @end
 
 
