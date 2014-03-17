@@ -36,6 +36,7 @@ test:
 edoc: 
 	mkdir -p doc/doc
 	cp doc/overview.edoc doc/doc
+	cp doc/*png doc/doc
 	erl -noshell -run edoc_run files '["src/process.erl","src/uml.erl"]' '[{dir,"doc/doc"}]'
 
 $(DOCDIR)/%.html: %.erl

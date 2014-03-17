@@ -18,68 +18,35 @@ are expressed as Erlang functions. In the following we document
 the internal format of the state machines, and provide examples
 to illustrate how UML behaviour can be encoded in Erlang functions.
 </p>
-<p>
-An example:<br/>
+
+<h2>An Example</h2>
+As an example we will consider how work with the <a href="http://en.wikipedia.org/wiki/Dining_philosophers_problem">Dining
+Philosopher problem</a> in UMLErl. The specification of
+the philosopher as a state machine is depicted below<br/><br/>
+<div style="text-align: center;">
+<img src="phil.png">
+</img>
+</div>
+<br/>
+and the fork is:
+<div style="text-align: center;">
+<img src="fork.png">
+</img>
+</div>
+<br/>
+
+The codification of the above state machines is show below in
+section...
+
+In the following we assume that the codification
+of the philosopher and fork state machines are stored
+in the files ``philosopher.erl'' and ``fork.erl'' respectively. First
+we have to invoke the Erlang compiler on these files (in the following
+we assume a Linux-based system):
 ```
-{ok,NodeId} = java:start_node(),
-Int10 = java:new(NodeId,'java.lang.Integer',[10]),
-String10 = java:call(Int10,toString,[]).
+$ erlc philosopher.erl fork.erl
 '''
-</p>
-<p>
-The above code starts a Java node, and establishes
-a connection to it. Then, a Java integer storing the value 10 is created,
-and finally a Java string representing "10" is returned
-from the Java integer just created.
-</p>
-<p>
-To make your Java classes (and Jar files) visible to the library
-the option ``add_to_java_classpath'' should be provided to
-``java:start_node/1''. An example:<br/>
-```
-{ok,NodeId} = java:start_node([{add_to_java_classpath,["classes"]}]).
-'''
-This adds the directory ``classes''
-to the classpath of the started Java interpreter
-</p>
 
-<h2>News</h2>
-The library now provides a facility to construct
-Java classes using Erlang, see the ``java_proxy''
-module for details.
-To disable this
-(the option is enabled by default)
-provide ``{enable_proxies,false}''
-as an option to ``start_node/2''.
-<p>
-Garbage collection is now implemented. To enable this
-(the option is currently disabled by default, but the default
-can change without warning)
-provide ``{enable_gc,TrueOrfalse}''
-as an option to ``start_node/2''.
-</p>
-<p>
-The code for generating an Erlang module corresponding to
-a Java class has been removed in this version of the library.
-Thus, Java objects can be created and accessed only
-using the functions exported from the ``java'' module.
-</p>
-<p>
-Java nodes can now be started on remote Erlang nodes --
-see the options for the ``java:start_node/1'' function.
-</p>
-
-<h2>Source code and precompiled libraries</h2>
-The source code of the library is available on GitHub
-at <a href="git://github.com/fredlund/JavaErlang.git">
-<code>git://github.com/fredlund/JavaErlang.git</code></a>.
-<p>
-Precompiled versions of the library are 
-<a href="http://babel.ls.fi.upm.es/~fred/JavaErlang/downloads.html">
-available too</a>.
-</p>
-
-<h2>Java Values</h2>
 The Java null value is represented as the Erlang atom ``null'',
 the Java boolean values true and false are represented as the
 corresponding atoms ``true'' and ``false'',
