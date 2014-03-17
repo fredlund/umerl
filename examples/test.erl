@@ -33,11 +33,7 @@
 t_test() ->
   MachineSpecs = [{mean_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
-  P =
-    spawn_link
-      (fun () ->
-	   process:start(MachineSpecs)
-       end),
+  P = process:start_link(MachineSpecs),
   io:format("Started process ~p~n",[P]),
   P!{message,hola},
   P!{message,{acquire,self()}},
@@ -50,7 +46,7 @@ t_test() ->
 t2_test() ->
   MachineSpecs = [{meaner_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
-  P = spawn_link(fun () -> process:start(MachineSpecs) end),
+  P = process:start_link(MachineSpecs),
   io:format("Started process ~p~n",[P]),
   P!{message,hola},
   P!{message,{acquire,self()}},
@@ -63,7 +59,7 @@ t2_test() ->
 t3_test() ->
   MachineSpecs = [{local_var_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
-  P = spawn_link(fun () -> process:start(MachineSpecs) end),
+  P = process:start_link(MachineSpecs),
   io:format("Started process ~p~n",[P]),
   P!{message,hola},
   P!{message,{acquire,self()}},
@@ -77,13 +73,10 @@ t4_test() ->
   MachineSpecs = [{process_var_machine,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
   P =
-    spawn_link
-      (fun () ->
-	   process:start
-	     (MachineSpecs,
-	      fun (Process) ->
-		  uml:assign(Process,acquired,false)
-	      end)
+    process:start_link
+      (MachineSpecs,
+       fun (Process) ->
+	   uml:assign(Process,acquired,false)
        end),
   io:format("Started process ~p~n",[P]),
   P!{message,hola},
@@ -98,16 +91,13 @@ t5_test() ->
   MachineSpecs = [{process_var_machine_with_entry,void}],
   io:format("Starting test with machine spec~n~p~n",MachineSpecs),
   P =
-    spawn_link
-      (fun () ->
-	   process:start
-	     (MachineSpecs,
-	      fun (Process) ->
-		  uml:assign(Process,acquired,false),
-		  uml:assign(Process,counter,0)
-	      end)
+    process:start_link
+      (MachineSpecs,
+       fun (Process) ->
+	   uml:assign(Process,acquired,false),
+	   uml:assign(Process,counter,0)
        end),
-  io:format("Started process ~p~n",[P]),
+    io:format("Started process ~p~n",[P]),
   P!{message,hola},
   P!{message,{acquire,self()}},
   receive
@@ -117,12 +107,9 @@ t5_test() ->
   timer:sleep(200).
 
 locker_test() ->
-  Locker =
-    spawn_link(fun () -> process:start([{locker,void}]) end),
-  Client1 =
-    spawn_link(fun () -> process:start([{locker_client,Locker}]) end),
-  Client2 =
-    spawn_link(fun () -> process:start([{locker_client,Locker}]) end),
+  Locker = process:start_link([{locker,void}]),
+  Client1 = process:start_link([{locker_client,Locker}]),
+  Client2 = process:start_link([{locker_client,Locker}]),
   timer:sleep(200).
     
 
