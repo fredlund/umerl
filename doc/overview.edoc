@@ -107,7 +107,7 @@ As we did not include any printouts in the philosophers and forks
 nothing was printed. We can suspect that there is a deadlock in the
 system, and one way to prove it is to use the <a href="https://babel.ls.fi.upm.es/trac/McErlang/">Erlang model checker</a> to find the deadlock.
 
-<h3>Using McErlang to debug the Dining Philosopher problem</h3>
+<h2>Using McErlang to debug the Dining Philosopher problem</h2>
 
 In the following we assume that McErlang is already installed,
 and that the current working directory is ``examples''.

@@ -23,6 +23,12 @@
 %% WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
 %% OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
 %% ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+%%
+
+%% @doc This module implements functions to issue triggers, and read/write
+%% container global variables for UML State Machines.
+%% @author Lars-Ake Fredlund (lfredlund@fi.upm.es)
+%% @copyright 2013 Lars-Ake Fredlund
 
 -module(uml).
 
@@ -38,11 +44,15 @@
 -define(LOG(X,Y), ok).
 -endif.
 
+%% @doc Sends a signal (message) to the specified machine
+%% container.
 -spec signal(pid()|atom(),any()) -> any().
 signal(To,Msg) ->
   ?LOG("signal ~p to ~p~n",[Msg,To]),
   To!{message,Msg}.
 
+%% @doc Makes a synchronous call to the specified machine
+%% container.
 -spec call(pid()|atom(),any()) -> any().
 call(To,Msg) ->
   To!{message,{call,Msg,self()}},
@@ -51,11 +61,13 @@ call(To,Msg) ->
       Result
   end.
 
+%% @doc Returns from a synchronous call.
 -spec return(pid()|atom(),any()) -> any().
 return(To,Msg) ->
   To!{return,Msg},
   Msg.
 
+%% @doc Assigns a value to a container global variables.
 -spec assign(context(),atom(),any()) -> any().
 assign({in_process,{Table,_Process}},Var,Value) ->
   ets:insert(Table,{Var,Value}),
@@ -64,6 +76,7 @@ assign({outside_process,{MachinePid,Process,Table}},Var,Value) ->
   Process!{write,MachinePid,Var,Value},
   Value.
 
+%% @doc Reads a value from a container global variables.
 -spec read(context(),atom()) -> any().
 read({in_process,{Table,_Process}},Var) ->
   [{_,Value}] = ets:lookup(Table,Var),
@@ -72,6 +85,9 @@ read({outside_process,{MachinePid,Process,Table}},Var) ->
   [{_,Value}] = ets:lookup(Table,Var),
   Value.
 
+%% @doc Returns the identity (Erlang process identifier) of
+%% the process container in which the currently executing
+%% state machine resides.
 -spec self(context()) -> pid()|atom().
 self({in_process,{_Table,Process}}) ->
   symbolic_name(Process);

@@ -23,6 +23,11 @@
 %% WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
 %% OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
 %% ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+%%
+
+%% @doc This module implements containers for UML state machines.
+%% @author Lars-Ake Fredlund (lfredlund@fi.upm.es)
+%% @copyright 2013 Lars-Ake Fredlund
 
 -module(process).
 
@@ -86,6 +91,7 @@ start(MachineSpecs) ->
 start(MachineSpecs,InitVars) ->
   start(MachineSpecs,InitVars,[]).
 
+%% @private
 %% @doc Spawns a new container for state machines.
 %% The MachineSpecs parameter is a list of the state machines
 %% (a module name, and a value corresponding to the initial
@@ -120,14 +126,14 @@ start(MachineSpecs,InitVars,Options) ->
 	     memory=Memory})
      end).
 
-%% @doc Spawns a new container for state machines.
+%% @doc Spawns, and links to, a new container for state machines.
 %% The MachineSpecs parameter is a list of the state machines
 %% that should run when the container is created.
 -spec start_link([{atom(),any()}]) -> no_return().
 start_link(MachineSpecs) ->
   start_link(MachineSpecs,fun (_) -> ok end).
 
-%% @doc Spawns a new container for state machines.
+%% @doc Spawns, and links to,  a new container for state machines.
 %% The MachineSpecs parameter is a list of the state machines
 %% (a module name, and a value corresponding to the initial
 %% state of the machine)
@@ -139,6 +145,7 @@ start_link(MachineSpecs) ->
 start_link(MachineSpecs,InitVars) ->
   start_link(MachineSpecs,InitVars,[]).
 
+%% @private
 %% @doc Spawns a new container for state machines.
 %% The MachineSpecs parameter is a list of the state machines
 %% (a module name, and a value corresponding to the initial
