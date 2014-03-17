@@ -152,7 +152,6 @@ Starting McErlang model checker version
 monitor error:
 deadlock
 Table has 11 states and 11 transitions.
-Stack depth 1 entries.
 '''
 
 First in line ``1>'' we obtain the definition of the ``#mce_opts'' records
@@ -168,8 +167,134 @@ and indeed, McErlang quickly finds an error. We could then
 proceed to investigate the error using e.g. the McErlang debugger, showing 
 the trace that leads to the error, but that exercise is left to the reader.
 
-<h2>UML State Machine format description</h2>
+<h2>UML State Machine internal format description</h2>
 
+An UML State Machine running under the UMLErl interpreter
+has access to two types of storage: global variables that are shared
+with other machines in the same container, and the state data which
+is associated to a UML machine state.
+
+An UML state machine running under UMLErl can interact with
+other state machines by issuing trigger events (sending messages). Such
+trigger events are always asynchronous.
+In addition, communication between
+machines residing in the same machine container
+is possible using shared variables.
+
+The internal format for UML State
+Machines represents a machine as an Erlang module in
+a special format. Such a "machine module" must include
+the Erlang include file ``umerl.hrl''.
+
+<h4>Initialising state machines</h4>
+The module should define a function ``init(Arg)'' which 
+given an argument, returns a tuple consisting of
+the first state name of the state machines,
+and the associated state data.
+As an example, the ``init'' function for a fork is defined as show below:
+```
+init(_) -> {idle, void}.
+'''
+The fork machine begins its execution in state ``idle'', and since
+it does not use the local machine state, we can simply initialize the 
+state to any value (here, arbitrarily, the Erlang atom ``void'').
+
+<h4>Defining states</h4>
+A state machine module defines a new state using
+a function which returns an Erlang record of type ``#uml_state''.
+Such a record has the following keys:
+<ul>
+<li>
+``name'' - the name of the state
+</li>
+<li>
+``transitions'' - a list of transitions with the state as source
+</li>
+<li>
+``entry'' - entry action (if any)
+</li>
+<li>
+``exit'' - exit action (if any)
+</li>
+<li>
+``do'' - do action (if any)
+</li>
+<li>
+``defer'' - either ``void'' (defer no events), ``all'' (defer all events),
+or a function for selecting which events to defer
+</li>
+<li>
+``type'' - an indication to UMLErl whether the transitions of the
+state has guards that only check global variables (``read''),
+only concern triggered events (``receive'') or both
+(``receive_read'').
+</li>
+</ul>
+
+<h4>Defining transitions</h4>
+A transition is a record ``#transition'' with the following keys:
+<ul>
+<li>
+``is_internal'' - a boolean describing whether a transition
+that has the same source and target states is considered to leave
+the state or not (i.e., whether the execution of the state
+will trigger ``entry'' and ``exit'' transitions).
+</li>
+<li>
+``guard'' - a function which implements the transition guard,
+and return transition action
+(see explanation below).
+</li>
+<li>
+``next_state'' - identifies the target state of the transition.
+</li>
+<li>
+``type'' - an indication to UMLErl whether the guard of the transition
+only checks global variables (``read''),
+only concern triggered events (``receive'') or both
+(``receive_read'').
+</li>
+</ul>
+
+<h4>Guards and Actions</h4>
+A guard function receives three parameters, 
+the trigger (or the atom ``void'' if there was no trigger),
+a context parameter, and the data state of the machine.
+The guard function should return either
+the boolean value ``false'', signifying that the evaluation
+of the guard failed, or ``{true, ActionFun}''
+where ``ActionFun'' is a function implementing the transition
+action. Such an "action function" receives a single parameter, 
+which is the data state of the machine.
+An "action function" should return a single value which corresponds
+to the new data state of the state machine (the name of the state
+is provided by the ``next_state'' value).
+A guard function read state container global values using a
+call to ``uml:read(Context,VariableName)'',
+and "action functions" may use the entire API available in 
+the ``uml'' module to issue trigger events (i.e., send messages),
+read and write global variables, etc.
+
+<h4>Exit and Entry actions</h4>
+Exit and entry actions are defined by a function, 
+which is provided with two arguments, a context, and
+the data state. These functions return a new data state,
+and may call functions in the ``uml'' module.
+
+<h4>Do action</h4>
+A function implementing a do action receives only the context parameter
+(since a do action is executed concurrently with normal 
+internal transitions the state machine does not have 
+a well-defined data state to pass to the do action). 
+The do function may call the functions provided by
+the ``uml'' module.
+
+<h4>Defer functions</h4>
+To control which trigger events are deferred, it is possible
+to specify a function which, provided a trigger, the
+data state, and the context, returns true if the event should
+be deferred, and false if the event should not be deferred in
+the current state.
 @end
 
 
