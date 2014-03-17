@@ -109,6 +109,24 @@ system, and one way to prove it is to use the <a href="https://babel.ls.fi.upm.e
 
 <h3>Using McErlang to debug the Dining Philosopher problem</h3>
 
+In the following we assume that McErlang is already installed,
+and that the current working directory is ``examples''.
+
+First we have to recompile the sources for the Dining Philosopher
+problem using McErlang:
+
+```
+$ mkdir mcerlang_ebin             # a temporary working dir
+$ mcerl_compiler -pz ../ebin -output_dir mcerlang_ebin -sources ../src/*.erl fork.erl philosopher.erl table.erl
+'''
+
+We can now run the Dining Philosopher example in McErlang:
+```
+$ mcerl -pz mcerlang_ebin 
+'''
+
+
+
 <h2>UML State Machine format description</h2>
 
 @end
