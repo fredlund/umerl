@@ -150,10 +150,11 @@ state(wait4opening) ->
                 {type        =   'receive',
                  next_state  =   opened_entry,
                  guard       =
-                    fun (limitReached, _Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (limitReached, Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true,
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
                             uml:signal(OpenSensor, ack),
+                            uml:assign(Process, status, 'opened'),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end};
                          (_, _, _) -> false
@@ -256,10 +257,11 @@ state(wait4closing) ->
                 {type        =   'receive',
                  next_state  =   closedAndDisabled_entry,
                  guard       =
-                    fun (limitReached, _Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
+                    fun (limitReached, Process, {T, OpenSensor, CloseSensor, ObsSensor}) ->
                         {true,
                          fun ({T, OpenSensor, CloseSensor, ObsSensor}) ->
                             uml:signal(CloseSensor, ack),
+                            uml:assign(Process, status, 'closed'),
                             {T, OpenSensor, CloseSensor, ObsSensor}
                          end};
                          (_, _, _) -> false

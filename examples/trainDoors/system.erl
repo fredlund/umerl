@@ -65,7 +65,12 @@ create_doors(N,TCMS) ->
 	   (Door,
 	    spawn_link
 	      (fun () ->
-		   sleep(1000), process:start([{Door,door,{TCMS, OpenSensor, CloseSensor, ObstacleSensor}}])
+		   sleep(1000),
+		   process:start
+		     ([{Door,door,{TCMS, OpenSensor, CloseSensor, ObstacleSensor}}],
+		      fun (Process) ->
+			  uml:assign(Process,status,closed)
+		      end)
 	       end)),
 	 Door
      end, lists:seq(1,N)).
