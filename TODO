@@ -1,4 +1,3 @@
-- Synchronous call and return
 - Nested states?
 - In UML orthogonal regions (machines) can coordinate by sending
 events (signals) to each other (not supported for now)

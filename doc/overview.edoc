@@ -1,0 +1,487 @@
+@title UMLErl - a tool for executing UML State machines
+using Erlang
+@author Lars-Ake Fredlund (lfredlund@fi.upm.es)
+@doc UMLErl is a tool for executing UML State Machine descriptions.
+In essence, it is an interpreter for UML State Machines written
+in the Erlang programming language. Due to the clean
+design of the interpreter, it is possible to either execute
+state machine, or to verify them using a model checker
+(e.g., <a href="https://babel.ls.fi.upm.es/trac/McErlang/wiki">McErlang</a>).
+<p>
+UMLErl currently does not have support for simulating UML 
+state machines which are written in UML graphical syntax.
+An interface from XML-based XMI format is being prototyped,
+but is not yet ready. The consequence is that UML state machines
+are written in an internal format, which is a mix of Erlang
+and UML syntax, and the actions of the state machines
+are expressed as Erlang functions. In the following we document 
+the internal format of the state machines, and provide examples
+to illustrate how UML behaviour can be encoded in Erlang functions.
+</p>
+
+<h2>Installing UMLErl</h2>
+To install UMLErl first Erlang must be installed. If Erlang is
+not already installed on your operating system consult the
+<a href="www.erlang.org">Erlang web site</a> for instructions
+on how to install it. In the following we assume that a Linux-based
+operating system is used, although UMLErl can be installed
+on e.g. Windows too.
+
+To use UMLErl it simply has to be compiled:
+```
+$ make
+'''
+
+<h2>An Example</h2>
+As an example we will consider how work with the <a href="http://en.wikipedia.org/wiki/Dining_philosophers_problem">Dining
+Philosopher problem</a> in UMLErl. The specification of
+the philosopher as a state machine is depicted below<br/><br/>
+<div style="text-align: center;">
+<img src="phil.png">
+</img>
+</div>
+<br/>
+and the fork is:
+<div style="text-align: center;">
+<img src="fork.png">
+</img>
+</div>
+<br/>
+
+The codification of the above state machines is show below in
+section...
+
+In the following we assume that the codification
+of the philosopher and fork state machines are stored
+in the files ``philosopher.erl'' and ``fork.erl'' respectively. First,
+we have to invoke the Erlang compiler on these files (in the following
+we assume a Linux-based system). It is assumed that the current
+working directory is the top directory of the UMLErl distribution.
+```
+$ cd examples                                          # move to examples directory
+$ erlc philosopher.erl fork.erl table.erl -pa ../ebin  # recompile the dining example
+'''
+
+The file ``table.erl'' contains the Erlang code to start the dining philosopher
+and is shown below:
+```
+-module(table).
+-compile(export_all).
+
+table(N) ->
+  Forks = lists:map (fun (_) -> process:start([{fork,void}]) end, lists:seq(1,N)),
+  lists:foreach
+    (fun ({L,R}) -> process:start([{philosopher,{L,R}}]) end, adjacent(Forks)).
+
+adjacent([]) -> [];
+adjacent([X|Xs]) -> lists:zip([X] ++ Xs, Xs ++ [X]).
+'''
+The main function in ``table(N)'' which provided a natural number ``N'',
+creates a table with ``N'' philosophers and ``N'' forks.
+
+We let each state machine run in their own machine container.
+In the simulator/verifier, each container is mapped to a unique Erlang 
+process, and we will hence use the terminology container/process interchangeably.
+
+Such a container, with machines, is created using the
+function ``process:start(ListOfMachines)'' (further documentation available
+in the Modules section to the left).
+In the call ``process:start([{philosopher,{L,R}}])'', for example,
+a new process is started with one associated state machine. The
+machine is implemented by the Erlang module ``philosopher'',
+and the machine receives as initial arguments 
+(``fL'' and ``fR'' in the philosopher state machine above)
+the addresses (Erlang pids) to its left and right fork processes.
+
+We can now run, e.g., simulate, a table with two philosophers and forks:
+```
+$ erl -pa ../ebin/
+Erlang R16B02 (erts-5.10.3) [source] [64-bit] [smp:12:12] [async-threads:10] [hipe] [kernel-poll:false]
+
+Eshell V5.10.3  (abort with ^G)
+1> table:table(2).
+ok
+2> 
+'''
+As we did not include any printouts in the philosophers and forks
+nothing was printed. We can suspect that there is a deadlock in the
+system, and one way to prove it is to use the <a href="https://babel.ls.fi.upm.es/trac/McErlang/">Erlang model checker</a> to find the deadlock.
+
+<h2>Using McErlang to debug the Dining Philosopher problem</h2>
+
+In the following we assume that McErlang is already installed,
+and that the current working directory is ``examples''.
+
+First we have to recompile the sources for the Dining Philosopher
+problem using McErlang:
+
+```
+$ mkdir mcerlang_ebin             # a temporary working dir
+$ mcerl_compiler -pa ../ebin -output_dir mcerlang_ebin -sources ../src/*.erl fork.erl philosopher.erl table.erl
+'''
+
+Note that above we in fact also recompiled the sources for the whole 
+UMLErl interpreter; thus the UMLErl interpreter will run under the control
+of the McErlang model checker.
+
+We can now run the Dining Philosopher example in McErlang:
+```
+$ mcerl -pa mcerlang_ebin 
+Erlang R16B02 (erts-5.10.3) [source] [64-bit] [smp:12:12] [async-threads:10] [hipe] [kernel-poll:false]
+
+Eshell V5.10.3  (abort with ^G)
+
+1> rr(mce:find_mce_opts()).
+[mce_opts]
+
+2> mce:start(#mce_opts{program=fun () -> table:table(2) end}).
+Starting McErlang model checker version
+"McErlang 2.1.1 [revision ++ compiled on lun nov 4 11:45:04 CET 2013]" ...
+
+...
+*** Run ending. 276 states explored, stored states 157.
+
+...
+ok
+3> mce:start(#mce_opts{program=fun () -> table:table(2) end,monitor=mce_mon_deadlock}).
+Starting McErlang model checker version
+"McErlang 2.1.1 [revision ++ compiled on lun nov 4 11:45:04 CET 2013]" ...
+
+...
+*** Monitor failed
+monitor error:
+deadlock
+Table has 11 states and 11 transitions.
+'''
+
+First in line ``1>'' we obtain the definition of the ``#mce_opts'' records
+which is used to specify what McErlang should attempt to verify
+(see the McErlang manual for further explanations).
+In line ``2>'' then we check that the Dining Philosopher problem, with
+two philosophers, does not raise any runtime exception
+(checking for the absence of runtime exceptions is the default 
+action of McErlang), which it apparently doesn't.
+Then, in line ``3>'' we check whether there are any deadlocks
+by specifying the monitor (correctness property) ``mce_mon_deadlock'',
+and indeed, McErlang quickly finds an error. We could then
+proceed to investigate the error using e.g. the McErlang debugger, showing 
+the trace that leads to the error, but that exercise is left to the reader.
+
+<h2>UML State Machine internal format description</h2>
+
+An UML State Machine running under the UMLErl interpreter
+has access to two types of storage: global variables that are shared
+with other machines in the same container, and the state data which
+is associated to a UML machine state.
+
+An UML state machine running under UMLErl can interact with
+other state machines by issuing trigger events (sending messages). Such
+trigger events are always asynchronous.
+In addition, communication between
+machines residing in the same machine container
+is possible using shared variables.
+
+The internal format for UML State
+Machines represents a machine as an Erlang module in
+a special format. Such a "machine module" must include
+the Erlang include file ``umerl.hrl''.
+
+<h4>Initialising state machines</h4>
+The module should define a function ``init(Arg)'' which 
+given an argument, returns a tuple consisting of
+the first state name of the state machines,
+and the associated state data.
+As an example, the ``init'' function for a fork is defined as show below:
+```
+init(_) -> {idle, void}.
+'''
+The fork machine begins its execution in state ``idle'', and since
+it does not use the local machine state, we can simply initialize the 
+state to any value (here, arbitrarily, the Erlang atom ``void'').
+
+<h4>Defining states</h4>
+A state machine module defines a new state using
+a function which returns an Erlang record of type ``#uml_state''.
+Such a record has the following keys:
+<ul>
+<li>
+``name'' - the name of the state
+</li>
+<li>
+``transitions'' - a list of transitions with the state as source
+</li>
+<li>
+``entry'' - entry action (if any)
+</li>
+<li>
+``exit'' - exit action (if any)
+</li>
+<li>
+``do'' - do action (if any)
+</li>
+<li>
+``defer'' - either ``void'' (defer no events), ``all'' (defer all events),
+or a function for selecting which events to defer
+</li>
+<li>
+``type'' - an indication to UMLErl whether the transitions of the
+state has guards that only check global variables (``read''),
+only concern triggered events (``receive'') or both
+(``receive_read'').
+</li>
+</ul>
+
+<h4>Defining transitions</h4>
+A transition is a record ``#transition'' with the following keys:
+<ul>
+<li>
+``is_internal'' - a boolean describing whether a transition
+that has the same source and target states is considered to leave
+the state or not (i.e., whether the execution of the state
+will trigger ``entry'' and ``exit'' transitions).
+</li>
+<li>
+``guard'' - a function which implements the transition guard,
+and return transition action
+(see explanation below).
+</li>
+<li>
+``next_state'' - identifies the target state of the transition.
+</li>
+<li>
+``type'' - an indication to UMLErl whether the guard of the transition
+only checks global variables (``read''),
+only concern triggered events (``receive'') or both
+(``receive_read'').
+</li>
+</ul>
+
+<h4>Guards and Actions</h4>
+A guard function receives three parameters, 
+the trigger (or the atom ``void'' if there was no trigger),
+a context parameter, and the data state of the machine.
+The guard function should return either
+the boolean value ``false'', signifying that the evaluation
+of the guard failed, or ``{true, ActionFun}''
+where ``ActionFun'' is a function implementing the transition
+action. Such an "action function" receives a single parameter, 
+which is the data state of the machine.
+An "action function" should return a single value which corresponds
+to the new data state of the state machine (the name of the state
+is provided by the ``next_state'' value).
+A guard function read state container global values using a
+call to ``uml:read(Context,VariableName)'',
+and "action functions" may use the entire API available in 
+the ``uml'' module to issue trigger events (i.e., send messages),
+read and write global variables, etc.
+
+<h4>Exit and Entry actions</h4>
+Exit and entry actions are defined by a function, 
+which is provided with two arguments, a context, and
+the data state. These functions return a new data state,
+and may call functions in the ``uml'' module.
+
+<h4>Do action</h4>
+A function implementing a do action receives only the context parameter
+(since a do action is executed concurrently with normal 
+internal transitions the state machine does not have 
+a well-defined data state to pass to the do action). 
+The do function may call the functions provided by
+the ``uml'' module.
+
+<h4>Defer functions</h4>
+To control which trigger events are deferred, it is possible
+to specify a function which, provided a trigger, the
+data state, and the context, returns true if the event should
+be deferred, and false if the event should not be deferred in
+the current state.
+
+<h2>Specifying the Dining Philosopher problem in the internal format</h2>
+<p>
+As an example we will provide the encoding of the philosopher and
+fork state machines, in the internal format, below.
+
+A fork state machine is implemented by the ``fork'' module below:
+```
+-module(fork).
+
+-include("../src/records.hrl").
+-include("../src/umerl.hrl").
+
+-compile(export_all).
+
+init(_Arg) ->
+  {idle, void}.
+
+state(idle) ->
+  #uml_state
+    {name=idle,
+     type='receive',
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=beingUsed,
+	 guard=
+	   fun ({acquire,From},_Process,_State) -> 
+	       {true,
+		fun (_State) ->
+		    uml:signal(From,acquired),
+		    From
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]};
+
+state(beingUsed) ->
+  #uml_state
+    {name=beingUsed,
+     type='receive',
+     defer=fun ({acquire,_},_,_) -> true; (_,_,_) -> false end,
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=idle,
+	 guard=
+	   fun (release,_Process,_) -> 
+	       {true,
+		fun (_State) ->
+		    void
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]}.
+'''
+
+The fork state machines has two states, ``idle'' and ``beingUsed'',
+with ``idle'' being the initial state.
+The ``idle'' state defines a single transition to the state
+``beingUsed'' triggered by the reception of a ``{acquire,From}''
+event, where ``From'' is the identity of the machine container
+issuing the event. The transition is triggered always, and
+performs the action to send a reply event using the 
+function call ``uml:signal(From,acquired)'', and
+saving the From parameter in the data state (for illustration
+purposes only, since it is not used later on).
+
+The ``beingUsed'' state has a single transition
+to the state ``idle'', which is triggered upon the reception of
+a ``release'' trigger event. 
+</p>
+
+<p>
+A philosopher state machine is implemented by the ``philosopher''
+module below:
+```
+-module(philosopher).
+
+-include("../src/records.hrl").
+-include("../src/umerl.hrl").
+
+-compile(export_all).
+
+init(Arg) ->
+  {thinking, Arg}.
+
+state(thinking) ->
+  #uml_state
+    {name=thinking,
+     type='read',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='read',
+	 next_state=hungry,
+	 guard=
+	   fun (_Process,_) -> 
+	       {true,
+		fun (State={FL,FR}) ->
+		    uml:signal(FL,{acquire,self()}),
+		    State
+		end}
+	   end}
+       ]};
+
+state(hungry) ->
+  #uml_state
+    {name=hungry,
+     type='receive',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=waiting,
+	 guard=
+	   fun (acquired,_Process,_State) -> 
+	       {true,
+		fun (State={FL,FR}) ->
+		    uml:signal(FR,{acquire,self()}),
+		    State
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]};
+
+state(waiting) ->
+  #uml_state
+    {name=waiting,
+     type='receive',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='receive',
+	 next_state=eating,
+	 guard=
+	   fun (acquired,_Process,_State) -> 
+	       {true,
+		fun (State) ->
+		    State
+		end};
+	       (_,_,_) -> false
+	   end}
+       ]};
+
+state(eating) ->
+  #uml_state
+    {name=eating,
+     type='read',
+     defer='none',
+     transitions=
+       [
+	#transition
+	{type='read',
+	 next_state=thinking,
+	 guard=
+	   fun (_Process,_State) -> 
+	       {true,
+		fun (State) ->
+		    State
+		end}
+	   end}
+       ],
+    do=
+       fun (_Process) ->
+	   io:format("eating spaghetti...~n")
+       end,
+     exit=
+       fun (_Process,State={FR,FL}) ->
+	   uml:signal(FR,release),
+	   uml:signal(FL,release),
+	   State
+       end
+    }.
+'''
+
+The ``philosopher'' module is similar to the ``fork'' one. To illustrate
+the coding of do actions we let the state ``eating'' print out
+the message ''eating spaghetti...'' when a philosopher
+has acquired both forks.
+</p>
+@end
+
+
+

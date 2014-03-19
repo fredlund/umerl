@@ -1,0 +1,18 @@
+This directory contains a number of examples of UML state machines
+coded in the internal UMLErl format.
+
+
+Dining Philosopher problem:
+===========================
+
+fork.erl, philosopher.erl, table.erl
+
+Locker
+======
+
+locker.erl, locker_client.erl
+
+test.erl
+========
+
+starts the examples

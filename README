@@ -1,0 +1,14 @@
+This directory contains the source code distribution
+of the UMLErl -- UML statemachines in Erlang -- tool.
+
+For instructions on how to install UMLErl and use it to simulate
+and verify a small example see http://babel.ls.fi.upm.es/~fred/umerl/.
+
+For Licence conditions see the file LICENCE.
+
+The directory examples contains a number of examples (a variant
+of the Dining Philosopher problem, a locker, etc) suitable
+for running under UMLErl.
+
+For questions or to submit comments regarding the tool please send an email
+to lfredlund@fi.upm.es

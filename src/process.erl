@@ -1,6 +1,38 @@
+%% Copyright (c) 2013, Lars-Ake Fredlund
+%% All rights reserved.
+%%
+%% Redistribution and use in source and binary forms, with or without
+%% modification, are permitted provided that the following conditions are met:
+%%     %% Redistributions of source code must retain the above copyright
+%%       notice, this list of conditions and the following disclaimer.
+%%     %% Redistributions in binary form must reproduce the above copyright
+%%       notice, this list of conditions and the following disclaimer in the
+%%       documentation and/or other materials provided with the distribution.
+%%     %% Neither the name of the copyright holders nor the
+%%       names of its contributors may be used to endorse or promote products
+%%       derived from this software without specific prior written permission.
+%%
+%% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ''AS IS''
+%% AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+%% IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+%% ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+%% BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+%% CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+%% SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
+%% BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+%% WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+%% OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+%% ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+%%
+
+%% @doc This module implements containers for UML state machines.
+%% @author Lars-Ake Fredlund (lfredlund@fi.upm.es)
+%% @copyright 2013 Lars-Ake Fredlund
+
 -module(process).
 
--export([start/1,start/2]).
+-export([start/1,start/2,start/3]).
+-export([start_link/1,start_link/2,start_link/3]).
 -export([run_machines/1,do_read/1,run_transition/2]).
 
 -include("records.hrl").
@@ -40,12 +72,36 @@
 -define(LOG(X,Y), ok).
 -endif.
 
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% that should run when the container is created.
 -spec start([{atom(),any()}]) -> no_return().
 start(MachineSpecs) ->
   start(MachineSpecs,fun (_) -> ok end).
 
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
 -spec start([{atom(),any()}],fun((context())->any())) -> no_return().
 start(MachineSpecs,InitVars) ->
+  start(MachineSpecs,InitVars,[]).
+
+%% @private
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
+-spec start([{atom(),any()}],fun((context())->any()),[any()]) -> no_return().
+start(MachineSpecs,InitVars,Options) ->
   Memory = ets:new(private,[public]),
   InitVars({in_process,{Memory,self()}}),
   {_,Machines} =
@@ -57,10 +113,50 @@ start(MachineSpecs,InitVars) ->
        end,
        {0,[]},
        MachineSpecs),
-  loop
-    (#process
-     {machines=Machines,
-      memory=Memory}).
+  SpawnFun =
+    case lists:member(link,Options) of
+      true -> spawn_link;
+      false -> spawn
+    end,
+  erlang:SpawnFun
+    (fun () ->
+	 loop
+	   (#process
+	    {machines=Machines,
+	     memory=Memory})
+     end).
+
+%% @doc Spawns, and links to, a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% that should run when the container is created.
+-spec start_link([{atom(),any()}]) -> no_return().
+start_link(MachineSpecs) ->
+  start_link(MachineSpecs,fun (_) -> ok end).
+
+%% @doc Spawns, and links to,  a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
+-spec start_link([{atom(),any()}],fun((context())->any())) -> no_return().
+start_link(MachineSpecs,InitVars) ->
+  start_link(MachineSpecs,InitVars,[]).
+
+%% @private
+%% @doc Spawns a new container for state machines.
+%% The MachineSpecs parameter is a list of the state machines
+%% (a module name, and a value corresponding to the initial
+%% state of the machine)
+%% that should run when the container is created, and
+%% the InitVars parameter is a function to initialise the
+%% shared variables in the container which is called when the
+%% container is created.
+-spec start_link([{atom(),any()}],fun((context())->any()),[any()]) -> no_return().
+start_link(MachineSpecs,InitVars,Options) ->
+  start(MachineSpecs,InitVars,[link|Options]).
 
 create_machine(Name,Module,Init) ->
   PreMachine = #machine{module=Module},
@@ -89,12 +185,14 @@ loop(State) ->
       do_read(ReadState)
   end.
 
+%% @private
 run_machines(State) ->
   case compute_transitions(State) of
     [] -> loop(modify_change_status(State,false));
     Transitions -> pick_a_transition(Transitions,State)
   end.
 
+%% @private
 do_read(State) ->
   receive
     RawMsg -> 
@@ -109,7 +207,8 @@ do_read(State) ->
 		lists:map
 		  (fun ({MachineId,Machine}) ->
 		       {MachineId,
-			case keep_message(Msg,Machine,State) of
+			case not(?GET_OPTION(early_discard))
+			  orelse keep_message(Msg,Machine,State) of
 			  true -> 
 			    Machine#machine
 			      {mailbox=Machine#machine.mailbox++[Msg]};
@@ -243,11 +342,19 @@ try_receive_msgs([Msg|Rest],Seen,Transitions,DataState,Machine,State,StateName,M
     [] ->
       try_receive_msgs(Rest,[Msg|Seen],Transitions,DataState,Machine,State,StateName,Machine);
     Results ->
-      NewMailbox = lists:reverse(Seen,Rest),
+      NewMailbox = lists:reverse(discard_messages(Seen,Machine,State),Rest),
       NewMachine = Machine#machine{mailbox=NewMailbox},
       lists:map
 	(fun ({GuardAction,Transition}) -> {GuardAction,Transition,NewMachine} end,
 	 Results)
+  end.
+
+discard_messages(Messages,Machine,State) ->
+  case ?GET_OPTION(early_discard) of
+    true ->
+      Messages;
+    false ->
+      lists:filter(fun (Msg) -> keep_message(Msg,Machine,State) end, Messages)
   end.
 
 try_receive_msg(Msg,Transitions,DataState,State,StateName,Machine) ->
@@ -306,7 +413,11 @@ run_guard_action(GuardAction,DataState,FromState,ToState,Machine,State) ->
     if
       FromState =/=  ToState ->
 	NewState = (Machine#machine.module):state(ToState),
-	Defer = defer_value(NewState#uml_state.defer),
+	Defer =
+	  case ?GET_OPTION(early_discard) of
+	    true -> defer_value(NewState#uml_state.defer);
+	    false -> all
+	  end,
 	if
 	  Defer == all -> Mailbox;
 	  Defer == none -> [];
@@ -388,6 +499,7 @@ choose(L) ->
     {M,F,Args} -> apply(M,F,Args)
   end.
 
+%% @private
 run_transition({GuardAction,ChosenTransition,Machine},State) ->  
   NextState =
     ChosenTransition#transition.next_state,

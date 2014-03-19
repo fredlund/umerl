@@ -21,6 +21,9 @@ ebin:
 ebin/%.beam: %.erl src/records.hrl
 	erlc +debug_info -pa ebin $(HIPE) -o ebin $<
 
+docs:
+	make edoc
+
 clean:
 	rm -rf ebin/* 
 
@@ -31,7 +34,10 @@ test:
 	erl -pa ebin -noshell -run test test -run erlang halt
 
 edoc: 
-	erl -noshell -run edoc_run files '["src/process.erl","src/machine.erl","src/uml.erl"]' '[{dir,"doc"}]'
+	mkdir -p doc/doc
+	cp doc/overview.edoc doc/doc
+	cp doc/*png doc/doc
+	erl -noshell -run edoc_run files '["src/process.erl","src/uml.erl"]' '[{dir,"doc/doc"}]'
 
 $(DOCDIR)/%.html: %.erl
 	erl -noshell -run edoc_run file '"$<"' '[{dir,"$(DOCDIR)"}]'
