@@ -1,14 +1,14 @@
-@title UMLErl - a tool for executing UML State machines
+@title UMerL - a tool for executing UML State machines
 using Erlang
 @author Lars-Ake Fredlund (lfredlund@fi.upm.es)
-@doc UMLErl is a tool for executing UML State Machine descriptions.
+@doc UMerL is a tool for executing UML State Machine descriptions.
 In essence, it is an interpreter for UML State Machines written
 in the Erlang programming language. Due to the clean
 design of the interpreter, it is possible to either execute
 state machine, or to verify them using a model checker
 (e.g., <a href="https://babel.ls.fi.upm.es/trac/McErlang/wiki">McErlang</a>).
 <p>
-UMLErl currently does not have support for simulating UML 
+UMerL currently does not have support for simulating UML 
 state machines which are written in UML graphical syntax.
 An interface from XML-based XMI format is being prototyped,
 but is not yet ready. The consequence is that UML state machines
@@ -19,22 +19,22 @@ the internal format of the state machines, and provide examples
 to illustrate how UML behaviour can be encoded in Erlang functions.
 </p>
 
-<h2>Installing UMLErl</h2>
-To install UMLErl first Erlang must be installed. If Erlang is
+<h2>Installing UMerL</h2>
+To install UMerL first Erlang must be installed. If Erlang is
 not already installed on your operating system consult the
 <a href="www.erlang.org">Erlang web site</a> for instructions
 on how to install it. In the following we assume that a Linux-based
-operating system is used, although UMLErl can be installed
+operating system is used, although UMerL can be installed
 on e.g. Windows too.
 
-To use UMLErl it simply has to be compiled:
+To use UMerL it simply has to be compiled:
 ```
 $ make
 '''
 
 <h2>An Example</h2>
 As an example we will consider how work with the <a href="http://en.wikipedia.org/wiki/Dining_philosophers_problem">Dining
-Philosopher problem</a> in UMLErl. The specification of
+Philosopher problem</a> in UMerL. The specification of
 the philosopher as a state machine is depicted below<br/><br/>
 <div style="text-align: center;">
 <img src="phil.png">
@@ -56,7 +56,7 @@ of the philosopher and fork state machines are stored
 in the files ``philosopher.erl'' and ``fork.erl'' respectively. First,
 we have to invoke the Erlang compiler on these files (in the following
 we assume a Linux-based system). It is assumed that the current
-working directory is the top directory of the UMLErl distribution.
+working directory is the top directory of the UMerL distribution.
 ```
 $ cd examples                                          # move to examples directory
 $ erlc philosopher.erl fork.erl table.erl -pa ../ebin  # recompile the dining example
@@ -121,7 +121,7 @@ $ mcerl_compiler -pa ../ebin -output_dir mcerlang_ebin -sources ../src/*.erl for
 '''
 
 Note that above we in fact also recompiled the sources for the whole 
-UMLErl interpreter; thus the UMLErl interpreter will run under the control
+UMerL interpreter; thus the UMerL interpreter will run under the control
 of the McErlang model checker.
 
 We can now run the Dining Philosopher example in McErlang:
@@ -169,12 +169,12 @@ the trace that leads to the error, but that exercise is left to the reader.
 
 <h2>UML State Machine internal format description</h2>
 
-An UML State Machine running under the UMLErl interpreter
+An UML State Machine running under the UMerL interpreter
 has access to two types of storage: global variables that are shared
 with other machines in the same container, and the state data which
 is associated to a UML machine state.
 
-An UML state machine running under UMLErl can interact with
+An UML state machine running under UMerL can interact with
 other state machines by issuing trigger events (sending messages). Such
 trigger events are always asynchronous.
 In addition, communication between
@@ -224,7 +224,7 @@ Such a record has the following keys:
 or a function for selecting which events to defer
 </li>
 <li>
-``type'' - an indication to UMLErl whether the transitions of the
+``type'' - an indication to UMerL whether the transitions of the
 state has guards that only check global variables (``read''),
 only concern triggered events (``receive'') or both
 (``receive_read'').
@@ -249,7 +249,7 @@ and return transition action
 ``next_state'' - identifies the target state of the transition.
 </li>
 <li>
-``type'' - an indication to UMLErl whether the guard of the transition
+``type'' - an indication to UMerL whether the guard of the transition
 only checks global variables (``read''),
 only concern triggered events (``receive'') or both
 (``receive_read'').
